@@ -9,13 +9,29 @@ datasource db {
   provider = "postgresql"
 }
 
-// Example model — replace or extend with your domain models
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum NewsCategory {
+  STT
+  TTS
+  V2V
+  General
+  Research
+}
 
-  @@map("users")
+model NewsItem {
+  id             String       @id @default(cuid())
+  title          String
+  date           DateTime
+  source         String
+  url            String       @unique
+  summary        String
+  category       NewsCategory
+  relevanceScore Int          @map("relevance_score")
+  tags           String[]
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([relevanceScore])
+  @@index([date])
+  @@map("news_items")
 }
