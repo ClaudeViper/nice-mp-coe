@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") ?? "50");
 
   const items = await prisma.newsItem.findMany({
-    where: category ? { category } : undefined,
+    where: category ? { category } : {},
     orderBy: [{ relevanceScore: "desc" }, { date: "desc" }],
     take: limit,
   });
