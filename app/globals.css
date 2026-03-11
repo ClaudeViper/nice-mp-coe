@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/*
+ * NICE (National Institute for Health and Care Excellence) Brand Colors
+ * https://www.nice.org.uk/brand-identity
+ */
+:root {
+  /* NICE primary palette */
+  --nice-blue: #003087;
+  --nice-blue-dark: #001f5b;
+  --nice-blue-light: #005eb8;
+
+  /* NHS secondary palette (used by NICE) */
+  --nhs-blue: #005eb8;
+  --nhs-warm-yellow: #ffb81c;
+  --nhs-green: #009639;
+  --nhs-green-dark: #007030;
+  --nhs-light-green: #78be20;
+  --nhs-aqua-green: #00a499;
+  --nhs-purple: #330072;
+  --nhs-dark-pink: #ae2573;
+  --nhs-dark-grey: #425563;
+  --nhs-mid-grey: #768692;
+  --nhs-pale-grey: #e8edee;
+  --nhs-white: #ffffff;
+  --nhs-black: #212b32;
+
+  /* Semantic tokens */
+  --background: var(--nhs-white);
+  --foreground: var(--nhs-black);
+  --primary: var(--nice-blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--nhs-pale-grey);
+  --secondary-foreground: var(--nhs-black);
+  --accent: var(--nhs-warm-yellow);
+  --accent-foreground: var(--nhs-black);
+  --destructive: #d5281b;
+  --border: #d8dde0;
+  --input: #d8dde0;
+  --ring: var(--nice-blue);
+  --muted: var(--nhs-pale-grey);
+  --muted-foreground: var(--nhs-dark-grey);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* NICE brand colors as Tailwind utilities */
+  --color-nice-blue: var(--nice-blue);
+  --color-nice-blue-dark: var(--nice-blue-dark);
+  --color-nice-blue-light: var(--nice-blue-light);
+  --color-nhs-blue: var(--nhs-blue);
+  --color-nhs-warm-yellow: var(--nhs-warm-yellow);
+  --color-nhs-green: var(--nhs-green);
+  --color-nhs-green-dark: var(--nhs-green-dark);
+  --color-nhs-light-green: var(--nhs-light-green);
+  --color-nhs-aqua-green: var(--nhs-aqua-green);
+  --color-nhs-purple: var(--nhs-purple);
+  --color-nhs-dark-pink: var(--nhs-dark-pink);
+  --color-nhs-dark-grey: var(--nhs-dark-grey);
+  --color-nhs-mid-grey: var(--nhs-mid-grey);
+  --color-nhs-pale-grey: var(--nhs-pale-grey);
+  --color-nhs-black: var(--nhs-black);
+
+  /* Semantic color tokens */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
