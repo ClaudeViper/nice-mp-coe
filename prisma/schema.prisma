@@ -9,6 +9,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── News ────────────────────────────────────────────────────────────────────
+
 enum NewsCategory {
   STT
   TTS
@@ -34,4 +36,68 @@ model NewsItem {
   @@index([relevanceScore])
   @@index([date])
   @@map("news_items")
+}
+
+// ─── Benchmarks ──────────────────────────────────────────────────────────────
+
+enum BenchmarkType {
+  STT
+  TTS
+  V2V
+}
+
+model Vendor {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  slug       String   @unique
+  website    String?
+  pricingUrl String?  @map("pricing_url")
+  docsUrl    String?  @map("docs_url")
+  isTracked  Boolean  @default(true) @map("is_tracked")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  benchmarkResults BenchmarkResult[]
+
+  @@map("vendors")
+}
+
+model BenchmarkResult {
+  id            String        @id @default(cuid())
+  vendorId      String        @map("vendor_id")
+  modelName     String        @map("model_name")
+  benchmarkType BenchmarkType @map("benchmark_type")
+  sourceName    String        @map("source_name")
+  sourceUrl     String        @map("source_url")
+  metricName    String        @map("metric_name")
+  metricValue   Decimal       @map("metric_value") @db.Decimal(10, 4)
+  metricUnit    String        @map("metric_unit")
+  dataset       String        @default("ALL")
+  language      String        @default("en")
+  collectedAt   DateTime      @default(now()) @map("collected_at")
+  rawData       Json?         @map("raw_data")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, modelName, metricName, dataset, language, sourceName])
+  @@index([vendorId])
+  @@index([benchmarkType])
+  @@index([metricName])
+  @@map("benchmark_results")
+}
+
+model BenchmarkRunLog {
+  id               String    @id @default(cuid())
+  status           String
+  sourcesChecked   Int       @default(0) @map("sources_checked")
+  resultsUpserted  Int       @default(0) @map("results_upserted")
+  resultsUnchanged Int       @default(0) @map("results_unchanged")
+  errors           Json?
+  startedAt        DateTime  @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@map("benchmark_run_log")
 }
