@@ -4,8 +4,8 @@ export default function STTBenchmarksPage() {
   return (
     <BenchmarkTable
       type="STT"
-      title="STT Benchmarks"
-      description="Speech-to-Text accuracy, latency, and pricing benchmarks across vendors"
+      title="Speech-to-Text Benchmarks"
+      description="WER, CER, RTF and latency rankings across leading STT vendors"
     />
   );
 }

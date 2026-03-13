@@ -5,7 +5,7 @@ export default function TTSBenchmarksPage() {
     <BenchmarkTable
       type="TTS"
       title="TTS Benchmarks"
-      description="Text-to-Speech quality, latency, and pricing benchmarks across vendors"
+      description="MOS scores, naturalness, TTFB and roundtrip WER across leading TTS vendors"
     />
   );
 }

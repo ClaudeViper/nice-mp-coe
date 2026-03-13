@@ -1,87 +1,148 @@
 @import "tailwindcss";
 
-/*
- * NICE (National Institute for Health and Care Excellence) Brand Colors
- * https://www.nice.org.uk/brand-identity
- */
+/* ── NICE.com (Contact Center / Agentic AI) Brand Design System ─────────────
+   Dark navy + electric cyan — AI-first, agentic, glassmorphism
+   ─────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  /* NICE primary palette */
-  --nice-blue: #003087;
-  --nice-blue-dark: #001f5b;
-  --nice-blue-light: #005eb8;
+  --nice-navy-950: #03091a;
+  --nice-navy-900: #060f2e;
+  --nice-navy-800: #0c1e4a;
+  --nice-navy-700: #102356;
+  --nice-navy-600: #1a3570;
+  --nice-cyan-500: #00d4e8;
+  --nice-cyan-400: #00e5f5;
+  --nice-cyan-300: #80eef8;
+  --nice-cyan-600: #00b8cc;
+  --nice-purple-500: #7c3aed;
+  --nice-purple-400: #a855f7;
 
-  /* NHS secondary palette (used by NICE) */
-  --nhs-blue: #005eb8;
-  --nhs-warm-yellow: #ffb81c;
-  --nhs-green: #009639;
-  --nhs-green-dark: #007030;
-  --nhs-light-green: #78be20;
-  --nhs-aqua-green: #00a499;
-  --nhs-purple: #330072;
-  --nhs-dark-pink: #ae2573;
-  --nhs-dark-grey: #425563;
-  --nhs-mid-grey: #768692;
-  --nhs-pale-grey: #e8edee;
-  --nhs-white: #ffffff;
-  --nhs-black: #212b32;
-
-  /* Semantic tokens */
-  --background: var(--nhs-white);
-  --foreground: var(--nhs-black);
-  --primary: var(--nice-blue);
+  --background: #f4f7ff;
+  --foreground: #0c1e4a;
+  --card: #ffffff;
+  --card-foreground: #0c1e4a;
+  --popover: #ffffff;
+  --popover-foreground: #0c1e4a;
+  --primary: #0c1e4a;
   --primary-foreground: #ffffff;
-  --secondary: var(--nhs-pale-grey);
-  --secondary-foreground: var(--nhs-black);
-  --accent: var(--nhs-warm-yellow);
-  --accent-foreground: var(--nhs-black);
-  --destructive: #d5281b;
-  --border: #d8dde0;
-  --input: #d8dde0;
-  --ring: var(--nice-blue);
-  --muted: var(--nhs-pale-grey);
-  --muted-foreground: var(--nhs-dark-grey);
+  --secondary: #eef2ff;
+  --secondary-foreground: #1a3570;
+  --muted: #eef2ff;
+  --muted-foreground: #64748b;
+  --accent: #00d4e8;
+  --accent-foreground: #03091a;
+  --destructive: #ef4444;
+  --border: #e2e8f8;
+  --input: #e2e8f8;
+  --ring: #00d4e8;
+  --radius: 0.625rem;
+
+  --sidebar: #060f2e;
+  --sidebar-foreground: #94a3b8;
+  --sidebar-border: rgba(255,255,255,0.06);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-
-  /* NICE brand colors as Tailwind utilities */
-  --color-nice-blue: var(--nice-blue);
-  --color-nice-blue-dark: var(--nice-blue-dark);
-  --color-nice-blue-light: var(--nice-blue-light);
-  --color-nhs-blue: var(--nhs-blue);
-  --color-nhs-warm-yellow: var(--nhs-warm-yellow);
-  --color-nhs-green: var(--nhs-green);
-  --color-nhs-green-dark: var(--nhs-green-dark);
-  --color-nhs-light-green: var(--nhs-light-green);
-  --color-nhs-aqua-green: var(--nhs-aqua-green);
-  --color-nhs-purple: var(--nhs-purple);
-  --color-nhs-dark-pink: var(--nhs-dark-pink);
-  --color-nhs-dark-grey: var(--nhs-dark-grey);
-  --color-nhs-mid-grey: var(--nhs-mid-grey);
-  --color-nhs-pale-grey: var(--nhs-pale-grey);
-  --color-nhs-black: var(--nhs-black);
-
-  /* Semantic color tokens */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+
+  --color-nice-navy-950: var(--nice-navy-950);
+  --color-nice-navy-900: var(--nice-navy-900);
+  --color-nice-navy-800: var(--nice-navy-800);
+  --color-nice-navy-700: var(--nice-navy-700);
+  --color-nice-navy-600: var(--nice-navy-600);
+  --color-nice-cyan-300: var(--nice-cyan-300);
+  --color-nice-cyan-400: var(--nice-cyan-400);
+  --color-nice-cyan-500: var(--nice-cyan-500);
+  --color-nice-cyan-600: var(--nice-cyan-600);
+  --color-nice-purple-400: var(--nice-purple-400);
+  --color-nice-purple-500: var(--nice-purple-500);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans, system-ui, sans-serif);
+  --font-mono: var(--font-geist-mono, ui-monospace, monospace);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,212,232,0.2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,212,232,0.4); }
+
+/* ── Gradient text ───────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #00d4e8 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── AI glow ─────────────────────────────────────────────────────────────── */
+.ai-glow {
+  box-shadow: 0 0 0 1px rgba(0,212,232,0.25), 0 0 24px rgba(0,212,232,0.08);
+}
+
+/* ── Neural dot grid ─────────────────────────────────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(0,212,232,0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Glass card ──────────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,212,232,0.12);
+}
+
+/* ── Animated gradient border ────────────────────────────────────────────── */
+@keyframes gb-spin { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,#00d4e8,#7c3aed,#00d4e8);
+  background-size: 200% 200%;
+  animation: gb-spin 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@media print {
+  .print\:hidden { display: none !important; }
+  body { background: white; color: black; }
 }

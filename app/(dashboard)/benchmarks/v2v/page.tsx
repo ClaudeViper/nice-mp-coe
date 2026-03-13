@@ -5,7 +5,7 @@ export default function V2VBenchmarksPage() {
     <BenchmarkTable
       type="V2V"
       title="V2V Benchmarks"
-      description="Voice-to-Voice agent performance, quality, and pricing benchmarks"
+      description="Task completion, e2e latency, persona consistency and interruption handling rankings"
     />
   );
 }

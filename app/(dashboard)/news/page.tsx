@@ -17,8 +17,9 @@ import {
   MessageSquare,
   FlaskConical,
   Globe,
+  AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,15 +40,21 @@ interface NewsItem {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const CATEGORY_CONFIG: Record<NewsCategory, { color: string; icon: React.ReactNode }> = {
-  STT: { color: "bg-purple-100 text-purple-700 border-purple-200", icon: <Mic className="h-3 w-3" /> },
-  TTS: { color: "bg-teal-100 text-teal-700 border-teal-200", icon: <Volume2 className="h-3 w-3" /> },
-  V2V: { color: "bg-orange-100 text-orange-700 border-orange-200", icon: <MessageSquare className="h-3 w-3" /> },
-  General: { color: "bg-gray-100 text-gray-700 border-gray-200", icon: <Globe className="h-3 w-3" /> },
-  Research: { color: "bg-blue-100 text-blue-700 border-blue-200", icon: <FlaskConical className="h-3 w-3" /> },
+const CATEGORY_CONFIG: Record<NewsCategory, { color: string; bg: string; border: string; icon: React.ReactNode }> = {
+  STT: { color: "#7c3aed", bg: "rgba(124,58,237,0.1)", border: "rgba(124,58,237,0.25)", icon: <Mic className="h-3 w-3" /> },
+  TTS: { color: "#00d4e8", bg: "rgba(0,212,232,0.1)", border: "rgba(0,212,232,0.25)", icon: <Volume2 className="h-3 w-3" /> },
+  V2V: { color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)", icon: <MessageSquare className="h-3 w-3" /> },
+  General: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.2)", icon: <Globe className="h-3 w-3" /> },
+  Research: { color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)", icon: <FlaskConical className="h-3 w-3" /> },
 };
 
 const CATEGORIES: Array<NewsCategory | "All"> = ["All", "STT", "TTS", "V2V", "General", "Research"];
+
+const inputStyle = {
+  background: "var(--secondary)",
+  border: "1px solid var(--border)",
+  color: "var(--foreground)",
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,31 +76,16 @@ function relativeDate(dateStr: string): string {
 }
 
 function RelevanceDots({ score }: { score: number }) {
+  const dotColor = score >= 8 ? "#10b981" : score >= 6 ? "#f59e0b" : "#94a3b8";
   return (
     <div className="flex items-center gap-0.5" title={`Relevance: ${score}/10`}>
       {Array.from({ length: 10 }, (_, i) => (
         <span
           key={i}
-          className={`h-1.5 w-1.5 rounded-full ${
-            i < score
-              ? score >= 8
-                ? "bg-green-500"
-                : score >= 6
-                  ? "bg-yellow-500"
-                  : "bg-gray-400"
-              : "bg-gray-200"
-          }`}
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: i < score ? dotColor : "var(--border)" }}
         />
       ))}
-    </div>
-  );
-}
-
-function SourceAvatar({ source }: { source: string }) {
-  const initial = source.charAt(0).toUpperCase();
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
-      {initial}
     </div>
   );
 }
@@ -114,101 +106,101 @@ function NewsCard({ item }: { item: NewsItem }) {
   }
 
   return (
-    <article
-      className={`rounded-xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${
-        isBreaking ? "border-amber-300 ring-1 ring-amber-200" : "border-gray-200"
-      }`}
-    >
-      {/* Breaking Banner */}
-      {isBreaking && (
-        <div className="mb-3 flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
-          <Zap className="h-3.5 w-3.5" />
-          High Relevance
+    <Card className={`glass-card border-0 ${isBreaking ? "ai-glow" : ""}`} style={isBreaking ? { border: "1px solid rgba(245,158,11,0.3)" } : undefined}>
+      <CardContent className="p-5">
+        {/* Breaking Banner */}
+        {isBreaking && (
+          <div className="mb-3 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold" style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}>
+            <Zap className="h-3.5 w-3.5" />
+            High Relevance
+          </div>
+        )}
+
+        {/* Top row: Category + Date + Relevance */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: catConfig.bg, color: catConfig.color, border: `1px solid ${catConfig.border}` }}>
+            {catConfig.icon}
+            {item.category}
+          </span>
+          <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{relativeDate(item.date)}</span>
+          <span className="ml-auto">
+            <RelevanceDots score={item.relevanceScore} />
+          </span>
         </div>
-      )}
 
-      {/* Top row: Category + Date + Relevance */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${catConfig.color}`}>
-          {catConfig.icon}
-          {item.category}
-        </span>
-        <span className="text-xs text-gray-400">{relativeDate(item.date)}</span>
-        <span className="ml-auto">
-          <RelevanceDots score={item.relevanceScore} />
-        </span>
-      </div>
-
-      {/* Title */}
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 block text-lg font-semibold text-gray-900 leading-snug hover:text-blue-600 transition-colors"
-      >
-        {item.title}
-      </a>
-
-      {/* Summary */}
-      <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-3">
-        {item.summary}
-      </p>
-
-      {/* Source row */}
-      <div className="mt-3 flex items-center gap-2">
-        <SourceAvatar source={item.source} />
-        <span className="text-sm font-medium text-gray-700">{item.source}</span>
-        <span className="text-xs text-gray-400">
-          {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-        </span>
-      </div>
-
-      {/* Tags */}
-      {item.tags.length > 0 && (
-        <div className="mt-3 flex gap-1.5 flex-wrap">
-          {item.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-xs text-gray-600"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="mt-4 flex items-center gap-3 border-t border-gray-100 pt-3">
+        {/* Title */}
         <a
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+          className="mt-3 block text-base font-semibold leading-snug transition-colors hover:opacity-80"
+          style={{ color: "var(--foreground)" }}
         >
-          Read More <ExternalLink className="h-3.5 w-3.5" />
+          {item.title}
         </a>
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => setBookmarked(!bookmarked)}
-            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
-              bookmarked
-                ? "bg-blue-50 text-blue-700"
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-            }`}
-          >
-            <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
-            {bookmarked ? "Saved" : "Bookmark"}
-          </button>
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share
-          </button>
+
+        {/* Summary */}
+        <p className="mt-2 text-sm leading-relaxed line-clamp-3" style={{ color: "var(--muted-foreground)" }}>
+          {item.summary}
+        </p>
+
+        {/* Source row */}
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}>
+            {item.source.charAt(0).toUpperCase()}
+          </div>
+          <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{item.source}</span>
+          <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+            {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </span>
         </div>
-      </div>
-    </article>
+
+        {/* Tags */}
+        {item.tags.length > 0 && (
+          <div className="mt-3 flex gap-1.5 flex-wrap">
+            {item.tags.map((tag) => (
+              <span key={tag} className="rounded-full px-2.5 py-0.5 text-xs" style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-4 flex items-center gap-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: "#00d4e8" }}
+          >
+            Read More <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setBookmarked(!bookmarked)}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-all"
+              style={bookmarked
+                ? { background: "rgba(0,212,232,0.1)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }
+                : { color: "var(--muted-foreground)", background: "transparent" }
+              }
+            >
+              <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-current" : ""}`} />
+              {bookmarked ? "Saved" : "Bookmark"}
+            </button>
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -220,7 +212,6 @@ export default function NewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
-  // Filters
   const [activeCategory, setActiveCategory] = useState<NewsCategory | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("relevance");
@@ -263,11 +254,9 @@ export default function NewsPage() {
     }
   }
 
-  // Breaking items (relevance >= 8)
   const breakingItems = useMemo(() => items.filter((i) => i.relevanceScore >= 8), [items]);
   const regularItems = useMemo(() => items.filter((i) => i.relevanceScore < 8), [items]);
 
-  // Stats
   const stats = useMemo(() => ({
     total: items.length,
     breaking: breakingItems.length,
@@ -275,52 +264,60 @@ export default function NewsPage() {
   }), [items, breakingItems]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">News Intelligence</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold" style={{ color: "var(--foreground)" }}>
+            News <span className="gradient-text">Intelligence</span>
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
             AI-curated feed of speech technology developments
           </p>
         </div>
-        <Button onClick={triggerAgent} disabled={running}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${running ? "animate-spin" : ""}`} />
+        <button
+          onClick={triggerAgent}
+          disabled={running}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}
+        >
+          <RefreshCw className={`h-4 w-4 ${running ? "animate-spin" : ""}`} />
           {running ? "Scouting..." : "Run News Scout"}
-        </Button>
+        </button>
       </div>
 
       {/* Stats Bar */}
       {items.length > 0 && (
-        <div className="flex items-center gap-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
-          <span className="text-sm text-gray-600">
-            <span className="font-semibold text-gray-900">{stats.total}</span> articles
+        <div className="flex items-center gap-5 rounded-xl px-4 py-2.5" style={{ background: "rgba(0,212,232,0.05)", border: "1px solid rgba(0,212,232,0.15)" }}>
+          <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+            <span className="font-semibold" style={{ color: "#00d4e8" }}>{stats.total}</span> articles
           </span>
           {stats.breaking > 0 && (
-            <span className="inline-flex items-center gap-1 text-sm text-amber-700">
+            <span className="inline-flex items-center gap-1 text-sm" style={{ color: "#f59e0b" }}>
               <Zap className="h-3.5 w-3.5" />
               <span className="font-semibold">{stats.breaking}</span> high relevance
             </span>
           )}
-          <span className="text-sm text-gray-600">
-            <span className="font-semibold text-gray-900">{stats.sources}</span> sources
+          <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>
+            <span className="font-semibold" style={{ color: "#00d4e8" }}>{stats.sources}</span> sources
           </span>
         </div>
       )}
 
       {/* Category Tabs */}
-      <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+      <div className="flex items-center gap-1 overflow-x-auto rounded-xl p-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
         {CATEGORIES.map((cat) => {
           const catConf = cat !== "All" ? CATEGORY_CONFIG[cat] : null;
+          const active = activeCategory === cat;
           return (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                activeCategory === cat
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-all"
+              style={active
+                ? { background: catConf ? catConf.bg : "rgba(0,212,232,0.1)", color: catConf ? catConf.color : "#00d4e8", border: `1px solid ${catConf ? catConf.border : "rgba(0,212,232,0.3)"}` }
+                : { color: "var(--muted-foreground)", background: "transparent", border: "1px solid transparent" }
+              }
             >
               {catConf?.icon}
               {cat}
@@ -330,74 +327,60 @@ export default function NewsPage() {
       </div>
 
       {/* Search, Sort & Date Filter */}
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
           <input
             type="text"
             placeholder="Search articles, sources, tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="w-full rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none"
+            style={inputStyle}
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              <X className="h-4 w-4" style={{ color: "var(--muted-foreground)" }} />
             </button>
           )}
         </div>
 
-        {/* Date Range */}
         <button
           onClick={() => setShowDateFilter(!showDateFilter)}
-          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
-            dateFrom || dateTo
-              ? "border-blue-300 bg-blue-50 text-blue-700"
-              : "border-gray-200 text-gray-700 hover:bg-gray-50"
-          }`}
+          className="inline-flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-all"
+          style={dateFrom || dateTo
+            ? { background: "rgba(0,212,232,0.12)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.3)" }
+            : inputStyle
+          }
         >
           <Calendar className="h-4 w-4" />
           Date Range
         </button>
 
-        {/* Sort */}
         <div className="relative">
           <select
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="appearance-none rounded-xl py-2.5 pl-3 pr-8 text-sm focus:outline-none"
+            style={inputStyle}
           >
             <option value="relevance">Sort: Relevance</option>
             <option value="date">Sort: Date</option>
             <option value="category">Sort: Category</option>
           </select>
-          <ArrowUpDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          <ArrowUpDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
         </div>
       </div>
 
       {/* Date Range Picker */}
       {showDateFilter && (
-        <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-          <label className="text-sm text-gray-600">From:</label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-blue-300 focus:outline-none"
-          />
-          <label className="text-sm text-gray-600">To:</label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-blue-300 focus:outline-none"
-          />
+        <div className="flex items-center gap-3 rounded-xl p-3 flex-wrap" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+          <label className="text-sm" style={{ color: "var(--muted-foreground)" }}>From:</label>
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm focus:outline-none" style={inputStyle} />
+          <label className="text-sm" style={{ color: "var(--muted-foreground)" }}>To:</label>
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="rounded-lg px-2 py-1.5 text-sm focus:outline-none" style={inputStyle} />
           {(dateFrom || dateTo) && (
-            <button
-              onClick={() => { setDateFrom(""); setDateTo(""); }}
-              className="text-xs text-blue-600 hover:underline"
-            >
+            <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs font-medium hover:opacity-80" style={{ color: "#00d4e8" }}>
               Clear dates
             </button>
           )}
@@ -406,26 +389,26 @@ export default function NewsPage() {
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <Newspaper className="h-4 w-4" />
-          {error}
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+          <AlertCircle className="h-4 w-4 flex-shrink-0" style={{ color: "#ef4444" }} />
+          <span style={{ color: "#ef4444" }}>{error}</span>
         </div>
       )}
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center justify-center py-20 text-gray-400">
-          <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-          Loading...
+        <div className="flex items-center justify-center py-20 gap-2" style={{ color: "var(--muted-foreground)" }}>
+          <RefreshCw className="h-5 w-5 animate-spin" style={{ color: "#00d4e8" }} />
+          <span className="text-sm">Loading...</span>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && items.length === 0 && !error && (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <Newspaper className="h-12 w-12 mb-3" />
-          <p className="text-sm font-medium text-gray-600">No news articles found</p>
-          <p className="text-xs mt-1">
+        <div className="glass-card rounded-xl py-16 text-center">
+          <Newspaper className="mx-auto h-12 w-12 mb-3" style={{ color: "var(--muted-foreground)", opacity: 0.3 }} />
+          <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>No news articles found</p>
+          <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
             {searchQuery || dateFrom || dateTo
               ? "Try adjusting your filters or search query."
               : "Click \"Run News Scout\" to fetch the latest speech AI news."}
@@ -435,8 +418,7 @@ export default function NewsPage() {
 
       {/* News Feed */}
       {!loading && items.length > 0 && (
-        <div className="max-w-3xl space-y-4">
-          {/* Breaking items first */}
+        <div className="space-y-4">
           {breakingItems.length > 0 && (
             <div className="space-y-4">
               {breakingItems.map((item) => (
@@ -445,14 +427,13 @@ export default function NewsPage() {
             </div>
           )}
 
-          {/* Regular items */}
           {regularItems.length > 0 && (
             <div className="space-y-4">
               {breakingItems.length > 0 && regularItems.length > 0 && (
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-gray-200" />
-                  <span className="text-xs text-gray-400">More articles</span>
-                  <div className="h-px flex-1 bg-gray-200" />
+                  <div className="h-px flex-1" style={{ background: "var(--border)" }} />
+                  <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>More articles</span>
+                  <div className="h-px flex-1" style={{ background: "var(--border)" }} />
                 </div>
               )}
               {regularItems.map((item) => (

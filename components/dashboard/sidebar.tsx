@@ -13,6 +13,9 @@ import {
   Mic,
   Volume2,
   AudioWaveform,
+  Sparkles,
+  ChevronRight,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,37 +41,51 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-gray-200 bg-white">
-      {/* NICE Branding */}
-      <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white text-sm">
-          N
+    <aside className="flex h-screen w-64 flex-col flex-shrink-0" style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}>
+      {/* ── NICE Logo ─────────────────────────────────────────────────── */}
+      <div className="flex h-16 items-center gap-3 px-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
+        {/* Logo mark */}
+        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}>
+          <span className="text-sm font-black text-white tracking-tight">N</span>
+          <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-400 ring-2" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.8)" }} />
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900">NICE MP CoE</p>
-          <p className="text-xs text-gray-500">Media Processing</p>
+          <p className="text-sm font-bold text-white leading-none tracking-tight">
+            NICE<span className="text-nice-cyan-500"> MP</span>
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--sidebar-foreground)" }}>
+            Agentic CoE
+          </p>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      {/* ── AI Status Banner ─────────────────────────────────────────── */}
+      <div className="mx-3 mt-4 rounded-lg px-3 py-2.5 flex items-center gap-2" style={{ background: "rgba(0,212,232,0.08)", border: "1px solid rgba(0,212,232,0.2)" }}>
+        <Zap className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#00d4e8" }} />
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-white truncate">AI Agents Active</p>
+          <p className="text-xs" style={{ color: "rgba(0,212,232,0.7)" }}>3 evaluations running</p>
+        </div>
+        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0 bg-emerald-400 animate-pulse" />
+      </div>
+
+      {/* ── Navigation ───────────────────────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navigation.map((item) => {
           if (item.children) {
             const isGroupActive = item.children.some((child) =>
               pathname.startsWith(child.href)
             );
             return (
-              <div key={item.name}>
+              <div key={item.name} className="mb-1">
                 <div
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-500",
-                    isGroupActive && "text-gray-700"
-                  )}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: isGroupActive ? "#00d4e8" : "rgba(148,163,184,0.6)" }}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.name}
                 </div>
-                <div className="ml-4 mt-1 space-y-1 border-l border-gray-100 pl-3">
+                <div className="ml-3 mt-0.5 space-y-0.5 pl-4" style={{ borderLeft: "1px solid rgba(0,212,232,0.15)" }}>
                   {item.children.map((child) => {
                     const active = pathname.startsWith(child.href);
                     return (
@@ -76,14 +93,21 @@ export function Sidebar() {
                         key={child.href}
                         href={child.href}
                         className={cn(
-                          "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                          "flex items-center justify-between rounded-lg px-3 py-1.5 text-sm transition-all duration-150 group",
                           active
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                            ? "font-semibold text-white"
+                            : "hover:text-white"
                         )}
+                        style={active
+                          ? { background: "rgba(0,212,232,0.12)", color: "#00d4e8" }
+                          : { color: "var(--sidebar-foreground)" }
+                        }
                       >
-                        <child.icon className="h-3.5 w-3.5" />
-                        {child.name}
+                        <span className="flex items-center gap-2">
+                          <child.icon className="h-3.5 w-3.5" />
+                          {child.name}
+                        </span>
+                        {active && <ChevronRight className="h-3 w-3" style={{ color: "#00d4e8" }} />}
                       </Link>
                     );
                   })}
@@ -92,32 +116,41 @@ export function Sidebar() {
             );
           }
 
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                active
-                  ? "bg-blue-50 text-blue-700 font-medium"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all duration-150 group"
               )}
+              style={active
+                ? { background: "rgba(0,212,232,0.12)", color: "#00d4e8" }
+                : { color: "var(--sidebar-foreground)" }
+              }
             >
-              <item.icon className="h-4 w-4" />
-              {item.name}
+              <span className="flex items-center gap-3 font-medium">
+                <item.icon className={cn("h-4 w-4 transition-colors", active ? "" : "group-hover:text-white")} />
+                <span className={active ? "text-white font-semibold" : "group-hover:text-white"}>
+                  {item.name}
+                </span>
+              </span>
+              {active && <div className="h-1.5 w-1.5 rounded-full" style={{ background: "#00d4e8", boxShadow: "0 0 6px rgba(0,212,232,0.8)" }} />}
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-gray-200 p-4">
-        <p className="text-xs text-gray-400">v0.1.0 · CoE Platform</p>
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <div className="p-4" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.03)" }}>
+          <Sparkles className="h-3.5 w-3.5" style={{ color: "#7c3aed" }} />
+          <div>
+            <p className="text-xs font-medium text-white">Powered by Claude</p>
+            <p className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>Agentic AI Platform</p>
+          </div>
+        </div>
       </div>
     </aside>
   );
