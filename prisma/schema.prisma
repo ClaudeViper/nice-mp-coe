@@ -47,17 +47,28 @@ enum BenchmarkType {
 }
 
 model Vendor {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  slug       String   @unique
-  website    String?
-  pricingUrl String?  @map("pricing_url")
-  docsUrl    String?  @map("docs_url")
-  isTracked  Boolean  @default(true) @map("is_tracked")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  website     String?
+  pricingUrl  String?  @map("pricing_url")
+  docsUrl     String?  @map("docs_url")
+  isTracked   Boolean  @default(true) @map("is_tracked")
+  description String?
+  logoUrl     String?  @map("logo_url")
+  foundedYear Int?     @map("founded_year")
+  hqLocation  String?  @map("hq_location")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  benchmarkResults BenchmarkResult[]
+  benchmarkResults     BenchmarkResult[]
+  products             VendorProduct[]
+  deploymentOptions    VendorDeploymentOption[]
+  securityCerts        VendorSecurityCert[]
+  supportedLanguages   VendorLanguage[]
+  pricingTiers         VendorPricingTier[]
+  niceCompatibility    NiceCompatibility?
+  registryRunLogs      VendorRegistryRunLog[]
 
   @@map("vendors")
 }
@@ -100,4 +111,150 @@ model BenchmarkRunLog {
   createdAt        DateTime  @default(now()) @map("created_at")
 
   @@map("benchmark_run_log")
+}
+
+// ─── Vendor Registry ────────────────────────────────────────────────────────
+
+enum ProductCategory {
+  STT
+  TTS
+  V2V
+  NLU
+  Conversational
+  Platform
+}
+
+model VendorProduct {
+  id          String          @id @default(cuid())
+  vendorId    String          @map("vendor_id")
+  name        String
+  slug        String
+  category    ProductCategory
+  version     String?
+  description String?
+  apiEndpoint String?         @map("api_endpoint")
+  isGa        Boolean         @default(true) @map("is_ga")
+  releasedAt  DateTime?       @map("released_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, slug])
+  @@index([vendorId])
+  @@index([category])
+  @@map("vendor_products")
+}
+
+enum DeploymentType {
+  Cloud
+  OnPrem
+  Hybrid
+  Edge
+}
+
+model VendorDeploymentOption {
+  id         String         @id @default(cuid())
+  vendorId   String         @map("vendor_id")
+  type       DeploymentType
+  details    String?
+  regions    String[]
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, type])
+  @@index([vendorId])
+  @@map("vendor_deployment_options")
+}
+
+model VendorSecurityCert {
+  id              String    @id @default(cuid())
+  vendorId        String    @map("vendor_id")
+  certName        String    @map("cert_name")
+  certBody        String?   @map("cert_body")
+  issuedAt        DateTime? @map("issued_at")
+  expiresAt       DateTime? @map("expires_at")
+  verificationUrl String?   @map("verification_url")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, certName])
+  @@index([vendorId])
+  @@map("vendor_security_certs")
+}
+
+model VendorLanguage {
+  id         String   @id @default(cuid())
+  vendorId   String   @map("vendor_id")
+  language   String
+  langCode   String   @map("lang_code")
+  accents    String[]
+  category   ProductCategory
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, langCode, category])
+  @@index([vendorId])
+  @@map("vendor_languages")
+}
+
+model VendorPricingTier {
+  id              String   @id @default(cuid())
+  vendorId        String   @map("vendor_id")
+  tierName        String   @map("tier_name")
+  category        ProductCategory
+  pricePerUnit    Decimal  @map("price_per_unit") @db.Decimal(10, 6)
+  unit            String
+  monthlyMinimum  Decimal? @map("monthly_minimum") @db.Decimal(10, 2)
+  volumeDiscount  String?  @map("volume_discount")
+  commitmentTerms String?  @map("commitment_terms")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, tierName, category])
+  @@index([vendorId])
+  @@map("vendor_pricing_tiers")
+}
+
+model NiceCompatibility {
+  id                       String   @id @default(cuid())
+  vendorId                 String   @unique @map("vendor_id")
+  cxoneIntegrationStatus   String   @map("cxone_integration_status")
+  integrationMethod        String?  @map("integration_method")
+  certifiedVersion         String?  @map("certified_version")
+  buildVsBuyScore          Int      @map("build_vs_buy_score")
+  buildVsBuyRationale      String?  @map("build_vs_buy_rationale")
+  migrationComplexity      String?  @map("migration_complexity")
+  estimatedIntegrationDays Int?     @map("estimated_integration_days")
+  notes                    String?
+  assessedAt               DateTime @default(now()) @map("assessed_at")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@map("nice_compatibility")
+}
+
+model VendorRegistryRunLog {
+  id               String    @id @default(cuid())
+  vendorId         String?   @map("vendor_id")
+  status           String
+  vendorsProcessed Int       @default(0) @map("vendors_processed")
+  fieldsUpdated    Int       @default(0) @map("fields_updated")
+  errors           Json?
+  startedAt        DateTime  @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@map("vendor_registry_run_log")
 }
