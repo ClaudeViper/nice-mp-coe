@@ -69,6 +69,7 @@ model Vendor {
   pricingTiers         VendorPricingTier[]
   niceCompatibility    NiceCompatibility?
   registryRunLogs      VendorRegistryRunLog[]
+  evaluations          Evaluation[]
 
   @@map("vendors")
 }
@@ -257,4 +258,73 @@ model VendorRegistryRunLog {
   vendor Vendor? @relation(fields: [vendorId], references: [id])
 
   @@map("vendor_registry_run_log")
+}
+
+// ─── Evaluations ────────────────────────────────────────────────────────────
+
+enum EvaluationStatus {
+  Pending
+  Running
+  Completed
+  Failed
+  Cancelled
+}
+
+model Evaluation {
+  id              String           @id @default(cuid())
+  vendorId        String           @map("vendor_id")
+  evaluationType  BenchmarkType    @map("evaluation_type")
+  modelName       String           @map("model_name")
+  status          EvaluationStatus @default(Pending)
+  config          Json
+  dataset         String           @default("standard")
+  language        String           @default("en")
+  totalSamples    Int              @default(0) @map("total_samples")
+  processedSamples Int             @default(0) @map("processed_samples")
+  startedAt       DateTime?        @map("started_at")
+  completedAt     DateTime?        @map("completed_at")
+  errorMessage    String?          @map("error_message")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  vendor  Vendor             @relation(fields: [vendorId], references: [id])
+  results EvaluationResult[]
+
+  @@index([vendorId])
+  @@index([evaluationType])
+  @@index([status])
+  @@map("evaluations")
+}
+
+model EvaluationResult {
+  id            String   @id @default(cuid())
+  evaluationId  String   @map("evaluation_id")
+  metricName    String   @map("metric_name")
+  metricValue   Decimal  @map("metric_value") @db.Decimal(10, 4)
+  metricUnit    String   @map("metric_unit")
+  sampleId      String?  @map("sample_id")
+  details       Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@index([metricName])
+  @@map("evaluation_results")
+}
+
+model EvaluationDataset {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  slug          String        @unique
+  type          BenchmarkType
+  description   String?
+  sampleCount   Int           @map("sample_count")
+  language      String        @default("en")
+  samples       Json
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@map("evaluation_datasets")
 }
