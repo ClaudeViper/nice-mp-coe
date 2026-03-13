@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -598,10 +598,10 @@ export default function NewEvaluationPage() {
                     ["Dataset", DATASETS[evaluationType].find((d) => d.id === dataset)?.name ?? dataset],
                     ["Language", LANGUAGES.find((l) => l.code === language)?.name ?? language],
                   ].map(([label, value]) => (
-                    <>
-                      <div key={`lbl-${label}`} style={{ color: "var(--muted-foreground)" }}>{label}:</div>
-                      <div key={`val-${label}`} className="font-medium" style={{ color: "var(--foreground)" }}>{value}</div>
-                    </>
+                    <Fragment key={label}>
+                      <div style={{ color: "var(--muted-foreground)" }}>{label}:</div>
+                      <div className="font-medium" style={{ color: "var(--foreground)" }}>{value}</div>
+                    </Fragment>
                   ))}
                 </div>
               </div>
