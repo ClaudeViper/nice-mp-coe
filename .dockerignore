@@ -1,0 +1,23 @@
+# Dependencies & build output
+node_modules
+.next
+
+# Environment files (inject at runtime, never bake into image)
+.env
+.env.*
+!.env.example
+
+# Dev tooling
+.git
+.gitignore
+*.md
+README*
+
+# Test artifacts
+coverage
+__tests__
+
+# Editor / OS
+.DS_Store
+.vscode
+*.log
