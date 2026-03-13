@@ -77,13 +77,28 @@ export function BenchmarkTable({
 
   const metrics = METRIC_GROUPS[type] ?? ["All"];
 
+  const [error, setError] = useState<string | null>(null);
+
   async function fetchBenchmarks(metric?: string) {
     setLoading(true);
-    const params = new URLSearchParams({ type });
-    if (metric && metric !== "All") params.set("metric", metric);
-    const res = await fetch(`/api/benchmarks?${params}`);
-    const data = await res.json();
-    setResults(data);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ type });
+      if (metric && metric !== "All") params.set("metric", metric);
+      const res = await fetch(`/api/benchmarks?${params}`);
+      if (!res.ok) {
+        const text = await res.text();
+        setError(`API error (${res.status}): ${text.slice(0, 200)}`);
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setResults(data);
+    } catch (err) {
+      setError(String(err));
+      setResults([]);
+    }
     setLoading(false);
   }
 
@@ -197,6 +212,15 @@ export function BenchmarkTable({
           <div className="flex items-center justify-center py-20 text-gray-400">
             <RefreshCw className="h-5 w-5 animate-spin mr-2" />
             Loading...
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-red-400">
+            <BarChart3 className="h-10 w-10 mb-3" />
+            <p className="text-sm font-medium">Failed to load benchmarks</p>
+            <p className="text-xs mt-1 max-w-md text-center">{error}</p>
+            <p className="text-xs mt-3 text-gray-400">
+              Run <code className="bg-gray-100 px-1 rounded">npx prisma generate && npm run db:push</code> then restart the dev server.
+            </p>
           </div>
         ) : sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
