@@ -12,7 +12,14 @@ import {
   Clock,
   Loader2,
   BarChart3,
+  Info,
 } from "lucide-react";
+import {
+  findMetric,
+  evaluateMetric,
+  METRIC_COLORS,
+  METRIC_DOT_COLORS,
+} from "@/lib/metrics";
 
 interface EvaluationDetail {
   id: string;
@@ -43,18 +50,56 @@ function MetricCard({
   name,
   value,
   unit,
+  evalType,
 }: {
   name: string;
   value: string;
   unit: string;
+  evalType: string;
 }) {
+  const numVal = parseFloat(value);
+  const rating = evaluateMetric(name, numVal, evalType);
+  const def = findMetric(name, evalType);
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase text-gray-500">{name}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">
+    <div className={`rounded-lg border p-4 ${METRIC_COLORS[rating]}`}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium uppercase">{def ? def.label : name}</p>
+        <div className="flex items-center gap-1.5">
+          <span className={`h-2 w-2 rounded-full ${METRIC_DOT_COLORS[rating]}`} />
+          {def && (
+            <span
+              className="relative"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <Info className="h-3 w-3 cursor-help opacity-60" />
+              {showTooltip && (
+                <div className="absolute bottom-full right-0 z-50 mb-2 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-lg text-left">
+                  <p className="text-xs text-gray-600">{def.description}</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    <span className="font-medium">Threshold:</span>{" "}
+                    <span className="text-green-700">{def.goodThreshold}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    <span className="font-medium">Measured:</span> {def.howMeasured}
+                  </p>
+                </div>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+      <p className="mt-1 text-2xl font-bold">
         {value}
-        <span className="ml-1 text-sm font-normal text-gray-500">{unit}</span>
+        <span className="ml-1 text-sm font-normal opacity-70">{unit}</span>
       </p>
+      {def && (
+        <p className="mt-1 text-xs opacity-70">
+          Threshold: {def.goodThreshold}
+        </p>
+      )}
     </div>
   );
 }
@@ -98,7 +143,6 @@ export default function EvaluationDetailPage() {
     }
     load();
 
-    // Poll for running evaluations
     const interval = setInterval(() => {
       if (evaluation?.status === "Running") load();
     }, 3000);
@@ -129,6 +173,16 @@ export default function EvaluationDetailPage() {
 
   const aggregateResults = evaluation.results.filter((r) => !r.sampleId);
   const sampleResults = evaluation.results.filter((r) => r.sampleId);
+
+  // Count pass/warning/fail
+  const summary = aggregateResults.reduce(
+    (acc, r) => {
+      const rating = evaluateMetric(r.metricName, parseFloat(r.metricValue), evaluation.evaluationType);
+      acc[rating]++;
+      return acc;
+    },
+    { good: 0, warning: 0, poor: 0 }
+  );
 
   return (
     <div className="space-y-6">
@@ -177,6 +231,28 @@ export default function EvaluationDetailPage() {
         </div>
       )}
 
+      {/* Threshold Summary */}
+      {aggregateResults.length > 0 && (
+        <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4">
+          <span className="text-sm font-medium text-gray-700">Threshold Summary:</span>
+          <span className="inline-flex items-center gap-1.5 text-sm">
+            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <span className="font-medium text-green-700">{summary.good}</span>
+            <span className="text-gray-500">pass</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-sm">
+            <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+            <span className="font-medium text-yellow-700">{summary.warning}</span>
+            <span className="text-gray-500">warning</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-sm">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span className="font-medium text-red-700">{summary.poor}</span>
+            <span className="text-gray-500">below</span>
+          </span>
+        </div>
+      )}
+
       {/* Aggregate Metrics */}
       {aggregateResults.length > 0 && (
         <div>
@@ -186,7 +262,13 @@ export default function EvaluationDetailPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {aggregateResults.map((r) => (
-              <MetricCard key={r.id} name={r.metricName} value={r.metricValue} unit={r.metricUnit} />
+              <MetricCard
+                key={r.id}
+                name={r.metricName}
+                value={r.metricValue}
+                unit={r.metricUnit}
+                evalType={evaluation.evaluationType}
+              />
             ))}
           </div>
         </div>
@@ -203,33 +285,47 @@ export default function EvaluationDetailPage() {
                   <th className="px-4 py-3">Sample</th>
                   <th className="px-4 py-3">Metric</th>
                   <th className="px-4 py-3">Value</th>
+                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Details</th>
                 </tr>
               </thead>
               <tbody>
-                {sampleResults.map((r) => (
-                  <tr key={r.id} className="border-b border-gray-50">
-                    <td className="px-4 py-2 font-mono text-xs text-gray-600">{r.sampleId}</td>
-                    <td className="px-4 py-2 text-gray-700">{r.metricName}</td>
-                    <td className="px-4 py-2 font-medium text-gray-900">
-                      {r.metricValue} {r.metricUnit}
-                    </td>
-                    <td className="px-4 py-2 text-xs text-gray-500 max-w-xs truncate">
-                      {r.details ? (
-                        <details>
-                          <summary className="cursor-pointer text-blue-600 hover:underline">
-                            View details
-                          </summary>
-                          <pre className="mt-1 whitespace-pre-wrap rounded bg-gray-50 p-2 text-xs">
-                            {JSON.stringify(r.details, null, 2)}
-                          </pre>
-                        </details>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {sampleResults.map((r) => {
+                  const numVal = parseFloat(r.metricValue);
+                  const rating = evaluateMetric(r.metricName, numVal, evaluation.evaluationType);
+
+                  return (
+                    <tr key={r.id} className="border-b border-gray-50">
+                      <td className="px-4 py-2 font-mono text-xs text-gray-600">{r.sampleId}</td>
+                      <td className="px-4 py-2 text-gray-700">
+                        {findMetric(r.metricName, evaluation.evaluationType)?.label ?? r.metricName}
+                      </td>
+                      <td className="px-4 py-2 font-medium text-gray-900">
+                        {r.metricValue} {r.metricUnit}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${METRIC_COLORS[rating]}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${METRIC_DOT_COLORS[rating]}`} />
+                          {rating}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-gray-500 max-w-xs truncate">
+                        {r.details ? (
+                          <details>
+                            <summary className="cursor-pointer text-blue-600 hover:underline">
+                              View details
+                            </summary>
+                            <pre className="mt-1 whitespace-pre-wrap rounded bg-gray-50 p-2 text-xs">
+                              {JSON.stringify(r.details, null, 2)}
+                            </pre>
+                          </details>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
