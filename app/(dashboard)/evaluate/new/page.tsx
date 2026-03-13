@@ -238,14 +238,14 @@ export default function NewEvaluationPage() {
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center gap-1 overflow-x-auto rounded-xl p-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
+      <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: "var(--secondary)", border: "1px solid var(--border)" }}>
         {STEPS.map((s, i) => (
           <button
             key={s.key}
             onClick={() => {
               if (i < step || (i === 6 && evaluationId)) setStep(i);
             }}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-all flex-shrink-0"
             style={
               i === step
                 ? { background: "linear-gradient(135deg,rgba(0,212,232,0.2),rgba(124,58,237,0.2))", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.3)" }
@@ -253,10 +253,10 @@ export default function NewEvaluationPage() {
                   ? { background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }
                   : { color: "var(--muted-foreground)", background: "transparent", border: "1px solid transparent" }
             }
+            title={s.label}
           >
             {i < step ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.icon}
-            <span className="hidden sm:inline">{s.label}</span>
-            <span className="sm:hidden">{i + 1}</span>
+            {i === step && <span className="whitespace-nowrap">{s.label}</span>}
           </button>
         ))}
       </div>

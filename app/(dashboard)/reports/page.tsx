@@ -130,19 +130,23 @@ export default function ReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div
-        className="rounded-xl p-6 relative overflow-hidden"
+        className="rounded-xl p-6 relative"
         style={{
           background: "linear-gradient(135deg, #060f2e 0%, #0c1e4a 50%, #102356 100%)",
           border: "1px solid rgba(0,212,232,0.2)",
         }}
       >
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(0,212,232,0.07) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
+          className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "radial-gradient(circle, rgba(0,212,232,0.07) 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
+        </div>
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -183,7 +187,7 @@ export default function ReportsPage() {
 
             {showMenu && (
               <div
-                className="absolute right-0 top-full z-10 mt-2 w-80 rounded-xl overflow-hidden"
+                className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl overflow-hidden"
                 style={{
                   background: "rgba(12,30,74,0.95)",
                   border: "1px solid rgba(0,212,232,0.2)",

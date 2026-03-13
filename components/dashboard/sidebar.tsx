@@ -43,18 +43,63 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-64 flex-col flex-shrink-0" style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}>
       {/* ── NICE Logo ─────────────────────────────────────────────────── */}
-      <div className="flex h-16 items-center gap-3 px-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
-        {/* Logo mark */}
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}>
-          <span className="text-sm font-black text-white tracking-tight">N</span>
-          <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-400 ring-2" style={{ boxShadow: "0 0 6px rgba(74,222,128,0.8)" }} />
-        </div>
+      <div className="flex h-16 items-center px-5" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
         <div>
-          <p className="text-sm font-bold text-white leading-none tracking-tight">
-            NICE<span className="text-nice-cyan-500"> MP</span>
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--sidebar-foreground)" }}>
-            Agentic CoE
+          {/* NiCE wordmark — blue dot replaces the natural dot of "i" */}
+          <div
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 900,
+              fontSize: "24px",
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+              color: "white",
+              display: "inline-flex",
+              alignItems: "flex-end",
+            }}
+          >
+            <span>N</span>
+            <span style={{ position: "relative", display: "inline-block" }}>
+              <span>i</span>
+              {/* Cover the natural i-dot */}
+              <span
+                style={{
+                  position: "absolute",
+                  top: "0px",
+                  left: "-1px",
+                  right: "-1px",
+                  height: "6px",
+                  background: "var(--sidebar)",
+                }}
+              />
+              {/* NiCE brand blue dot */}
+              <span
+                style={{
+                  position: "absolute",
+                  top: "-2px",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  background: "#4A90D9",
+                  boxShadow: "0 0 6px rgba(74,144,217,0.7)",
+                }}
+              />
+            </span>
+            <span>CE</span>
+          </div>
+          <p
+            style={{
+              color: "rgba(148,163,184,0.6)",
+              fontSize: "9.5px",
+              marginTop: "3px",
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            Media Processing Group
           </p>
         </div>
       </div>
