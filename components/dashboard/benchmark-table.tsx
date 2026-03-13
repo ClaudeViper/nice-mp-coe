@@ -40,15 +40,18 @@ function MetricTooltip({ metric }: { metric: MetricDefinition }) {
   const [show, setShow] = useState(false);
   return (
     <span className="relative inline-block ml-1">
-      <button
+      <span
+        role="button"
+        tabIndex={0}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        onClick={() => setShow(!show)}
-        className="inline-flex items-center transition-colors"
+        onClick={(e) => { e.stopPropagation(); setShow(!show); }}
+        onKeyDown={(e) => e.key === "Enter" && setShow(!show)}
+        className="inline-flex items-center transition-colors cursor-pointer"
         style={{ color: "var(--muted-foreground)" }}
       >
         <Info className="h-3 w-3" />
-      </button>
+      </span>
       {show && (
         <div
           className="absolute bottom-full left-1/2 z-50 mb-2 w-72 -translate-x-1/2 rounded-xl p-4 shadow-xl text-left"
