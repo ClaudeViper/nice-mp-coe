@@ -57,40 +57,37 @@ const TYPE_CONFIG: Record<EvalType, { label: string; desc: string; icon: React.R
     label: "Speech-to-Text",
     desc: "Evaluate transcription accuracy, latency, and robustness across audio samples.",
     icon: <Mic className="h-8 w-8" />,
-    samples: "10 audio samples",
+    samples: "50 audio samples",
     color: "border-purple-500 bg-purple-50 text-purple-700",
   },
   TTS: {
     label: "Text-to-Speech",
     desc: "Evaluate voice quality, naturalness, latency, and intelligibility.",
     icon: <Volume2 className="h-8 w-8" />,
-    samples: "8 text prompts",
+    samples: "30 text prompts",
     color: "border-teal-500 bg-teal-50 text-teal-700",
   },
   V2V: {
     label: "Voice-to-Voice",
     desc: "Evaluate conversational AI with task completion, latency, and naturalness.",
     icon: <MessageSquare className="h-8 w-8" />,
-    samples: "6 conversation scenarios",
+    samples: "10 conversation scripts",
     color: "border-orange-500 bg-orange-50 text-orange-700",
   },
 };
 
 const DATASETS: Record<EvalType, Array<{ id: string; name: string; desc: string; samples: number }>> = {
   STT: [
-    { id: "standard", name: "Standard Contact Center", desc: "10 diverse audio samples: greetings, complaints, technical, medical, multi-speaker", samples: 10 },
-    { id: "noisy", name: "Noisy Environment", desc: "Audio with background noise, phone quality, crowd noise", samples: 10 },
-    { id: "multilingual", name: "Multilingual", desc: "Samples in English, Spanish, French, German, Japanese", samples: 15 },
+    { id: "NICE-CX-Clean-EN", name: "NICE-CX-Clean-EN", desc: "50 clean contact-center clips: account inquiries, billing, technical support, and agent-assist interactions.", samples: 50 },
+    { id: "NICE-CX-Noisy-EN", name: "NICE-CX-Noisy-EN", desc: "50 challenging clips: background noise, mobile/VoIP artifacts, accented speech, and IVR interactions.", samples: 50 },
   ],
   TTS: [
-    { id: "standard", name: "Standard IVR Prompts", desc: "8 text prompts: greetings, numbers, empathy, scheduling, verification", samples: 8 },
-    { id: "emotional", name: "Emotional Range", desc: "Prompts requiring different emotional tones", samples: 10 },
-    { id: "long-form", name: "Long-Form", desc: "Extended passages for sustained quality evaluation", samples: 6 },
+    { id: "NICE-TTS-IVR-EN", name: "NICE-TTS-IVR-EN", desc: "30 IVR prompt scripts: main menus, confirmations, payments, scheduling, and system messages.", samples: 30 },
+    { id: "NICE-TTS-Agent-EN", name: "NICE-TTS-Agent-EN", desc: "30 agent response scripts: greetings, empathy, resolutions, escalations, and farewells.", samples: 30 },
   ],
   V2V: [
-    { id: "standard", name: "Standard Scenarios", desc: "6 common contact center scenarios: billing, scheduling, tech support", samples: 6 },
-    { id: "complex", name: "Complex Multi-Turn", desc: "Scenarios requiring multi-turn reasoning and context retention", samples: 8 },
-    { id: "edge-cases", name: "Edge Cases", desc: "Interruptions, silence, accent switches, topic changes", samples: 10 },
+    { id: "NICE-V2V-Support-EN", name: "NICE-V2V-Support-EN", desc: "10 customer support scripts: billing disputes, technical issues, fraud, retention, and escalation.", samples: 10 },
+    { id: "NICE-V2V-IVR-EN", name: "NICE-V2V-IVR-EN", desc: "10 conversational IVR scripts: intent recognition, interruption handling, authentication, and fallbacks.", samples: 10 },
   ],
 };
 
@@ -130,7 +127,7 @@ export default function NewEvaluationPage() {
   const [connectionMode, setConnectionMode] = useState<"simulate" | "api" | "container">("simulate");
   const [endpointUrl, setEndpointUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [dataset, setDataset] = useState("standard");
+  const [dataset, setDataset] = useState("NICE-CX-Clean-EN");
   const [language, setLanguage] = useState("en");
   const [audioFormat, setAudioFormat] = useState("wav");
   const [samplingRate, setSamplingRate] = useState(16000);
@@ -264,7 +261,14 @@ export default function NewEvaluationPage() {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => { setEvaluationType(type); setDataset("standard"); }}
+                    onClick={() => {
+                      setEvaluationType(type);
+                      setDataset(
+                        type === "STT" ? "NICE-CX-Clean-EN" :
+                        type === "TTS" ? "NICE-TTS-IVR-EN" :
+                        "NICE-V2V-Support-EN"
+                      );
+                    }}
                     className={`rounded-lg border-2 p-5 text-left transition-all ${
                       evaluationType === type
                         ? cfg.color

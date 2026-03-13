@@ -30,7 +30,7 @@ export interface EvaluationRunResult {
   error?: string;
 }
 
-// ─── Built-in Test Datasets ──────────────────────────────────────────────────
+// ─── Built-in Test Datasets (Spec §8.2) ──────────────────────────────────────
 
 interface STTSample {
   id: string;
@@ -38,6 +38,7 @@ interface STTSample {
   groundTruth: string;
   duration: number;
   difficulty: string;
+  useCase: string;
 }
 
 interface TTSSample {
@@ -45,6 +46,7 @@ interface TTSSample {
   text: string;
   expectedDuration: number;
   category: string;
+  useCase: string;
 }
 
 interface V2VSample {
@@ -53,40 +55,259 @@ interface V2VSample {
   expectedBehavior: string;
   turns: number;
   category: string;
+  useCase: string;
 }
 
-const STT_SAMPLES: STTSample[] = [
-  { id: "stt-001", audioDescription: "Clear male voice, office environment", groundTruth: "The quarterly earnings report shows a significant increase in revenue compared to last year.", duration: 4.2, difficulty: "easy" },
-  { id: "stt-002", audioDescription: "Female voice with background noise, call center", groundTruth: "I'd like to schedule an appointment for next Tuesday at three o'clock please.", duration: 3.8, difficulty: "medium" },
-  { id: "stt-003", audioDescription: "Accented speech, medical terminology", groundTruth: "The patient presented with acute myocardial infarction and was administered tissue plasminogen activator.", duration: 5.1, difficulty: "hard" },
-  { id: "stt-004", audioDescription: "Fast speech, technical support call", groundTruth: "Have you tried restarting your router and checking if the ethernet cable is properly connected to the modem?", duration: 4.5, difficulty: "medium" },
-  { id: "stt-005", audioDescription: "Elderly speaker, slow pace", groundTruth: "Could you please help me understand my monthly statement? I don't recognize some of these charges.", duration: 5.8, difficulty: "easy" },
-  { id: "stt-006", audioDescription: "Multiple speakers, conference call", groundTruth: "We need to finalize the proposal by Friday. Can everyone submit their sections by Wednesday?", duration: 4.0, difficulty: "hard" },
-  { id: "stt-007", audioDescription: "Phone quality audio, customer complaint", groundTruth: "I've been on hold for thirty minutes and this is the third time I'm calling about the same issue.", duration: 4.3, difficulty: "medium" },
-  { id: "stt-008", audioDescription: "Clear speech with numbers", groundTruth: "My account number is seven four two three eight nine one and my zip code is nine zero two one zero.", duration: 5.0, difficulty: "medium" },
-  { id: "stt-009", audioDescription: "Emotional speech, frustrated customer", groundTruth: "This is absolutely unacceptable! I was promised a refund two weeks ago and nothing has happened.", duration: 4.1, difficulty: "hard" },
-  { id: "stt-010", audioDescription: "Whispered speech, quiet environment", groundTruth: "I'm in a meeting right now. Can I call you back in about fifteen minutes?", duration: 3.5, difficulty: "hard" },
+// ── STT Dataset: NICE-CX-Clean-EN ─────────────────────────────────────────────
+// 50 clean-audio contact-center clips, Agent Assist use case
+const NICE_CX_CLEAN_EN: STTSample[] = [
+  { id: "clean-001", audioDescription: "Clear male voice, office environment", groundTruth: "The quarterly earnings report shows a significant increase in revenue compared to last year.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-002", audioDescription: "Clear female voice, quiet room", groundTruth: "I would like to update my account information and change my billing address to the new location.", duration: 4.5, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-003", audioDescription: "Native speaker, standard accent", groundTruth: "Can you please transfer me to the technical support department? I'm having issues with my device.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-004", audioDescription: "Clear voice, professional tone", groundTruth: "I need to file a claim for the damaged item that was delivered yesterday morning.", duration: 3.9, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-005", audioDescription: "Studio quality recording", groundTruth: "Please confirm that my appointment is scheduled for Thursday at two in the afternoon.", duration: 4.0, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-006", audioDescription: "Clear voice, fast speech rate", groundTruth: "My order number is four seven two nine alpha and I haven't received a shipping confirmation email.", duration: 4.3, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-007", audioDescription: "Standard American English", groundTruth: "The warranty on my product expired last month and I'm wondering about extended coverage options.", duration: 4.6, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-008", audioDescription: "Clear speech with product names", groundTruth: "I purchased the Deluxe Pro subscription plan but I'm not seeing all the features in my account.", duration: 4.4, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-009", audioDescription: "Professional business call", groundTruth: "We need to schedule a conference call with the compliance team for next Wednesday at ten AM.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-010", audioDescription: "Clear voice with numbers", groundTruth: "My account number is eight six four two one seven and the last four digits of my card are five nine three two.", duration: 5.1, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-011", audioDescription: "Native English, calm tone", groundTruth: "I'd like to set up automatic payments from my checking account every month on the fifteenth.", duration: 4.3, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-012", audioDescription: "Clear enunciation, technical terms", groundTruth: "The API integration is returning a four zero four error when I try to authenticate with my credentials.", duration: 4.8, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-013", audioDescription: "Customer service interaction", groundTruth: "I was told by a previous agent that I would receive a callback within forty-eight hours but that never happened.", duration: 5.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-014", audioDescription: "Clear speech, business context", groundTruth: "Our enterprise contract expires in sixty days and I need to initiate the renewal process.", duration: 4.4, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-015", audioDescription: "Standard pronunciation", groundTruth: "Can you verify my identity using my PIN number? It's seven four one nine two.", duration: 3.8, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-016", audioDescription: "Professional tone, clear diction", groundTruth: "I need a detailed invoice for all transactions from January through March for tax purposes.", duration: 4.5, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-017", audioDescription: "Calm customer, normal pace", groundTruth: "Please cancel my current plan and switch me to the basic tier starting from next billing cycle.", duration: 4.6, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-018", audioDescription: "Clear audio, customer inquiry", groundTruth: "What are the processing fees for international wire transfers to European bank accounts?", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-019", audioDescription: "Articulate speaker", groundTruth: "The promotional discount I received in my email doesn't seem to be applying at checkout.", duration: 4.3, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-020", audioDescription: "Professional business English", groundTruth: "I'm calling to dispute a charge of three hundred and forty-two dollars that appeared on my last statement.", duration: 4.7, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-021", audioDescription: "Clear voice, compound sentence", groundTruth: "If my package doesn't arrive by Friday I'd like to request a full refund and cancel the replacement order.", duration: 5.0, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-022", audioDescription: "Native English, formal register", groundTruth: "Please escalate this issue to your supervisor and provide me with a case reference number.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-023", audioDescription: "Clear speech with acronyms", groundTruth: "I need to configure the SSO settings for our LDAP integration with the CRM platform.", duration: 4.5, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-024", audioDescription: "Standard call recording quality", groundTruth: "My zip code is nine two one zero three and I've lived at this address for the past five years.", duration: 4.0, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-025", audioDescription: "Polished business speech", groundTruth: "We're looking to onboard approximately two hundred new users over the next quarter.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-026", audioDescription: "Clear voice, date references", groundTruth: "The incident occurred on the fourteenth of February and I have the ticket number from that day.", duration: 4.4, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-027", audioDescription: "Professional English, service inquiry", groundTruth: "What is the current status of my maintenance request submitted three days ago?", duration: 3.9, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-028", audioDescription: "Clear diction, financial topic", groundTruth: "I need to transfer ten thousand dollars from my savings to my checking account immediately.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-029", audioDescription: "Calm and clear, medical", groundTruth: "I'd like to schedule a follow-up appointment with Dr. Johnson for next Tuesday afternoon.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-030", audioDescription: "Clear speech with email address", groundTruth: "My email address is john dot smith at example dot com and I haven't received the activation link.", duration: 4.6, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-031", audioDescription: "Standard English, troubleshooting", groundTruth: "I've already restarted the device twice and the problem persists after each restart.", duration: 4.0, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-032", audioDescription: "Clear voice, legal terminology", groundTruth: "I need a copy of the terms and conditions and the privacy policy for our compliance records.", duration: 4.2, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-033", audioDescription: "Professional, multi-part question", groundTruth: "Can you tell me what the interest rate is and when the next payment is due?", duration: 3.8, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-034", audioDescription: "Clear audio, software support", groundTruth: "The software version I'm running is fourteen point two point one and I need the patch notes.", duration: 4.3, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-035", audioDescription: "Native speaker, normal cadence", groundTruth: "I received a notification that my account was accessed from an unrecognized device in Texas.", duration: 4.5, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-036", audioDescription: "Clear voice, return request", groundTruth: "I want to return the blender I bought last week because it doesn't blend as described.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-037", audioDescription: "Professional call, escalation", groundTruth: "This is the fourth time I'm calling about the same unresolved issue and I need a final resolution.", duration: 4.6, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-038", audioDescription: "Clear audio, address verification", groundTruth: "My new address is one twenty-three Main Street Apartment four B San Diego California.", duration: 4.4, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-039", audioDescription: "Standard speech, service upgrade", groundTruth: "I'd like to upgrade my current plan to include international calling and data roaming.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-040", audioDescription: "Clear pronunciation, reference numbers", groundTruth: "My claim reference is C-R-M dash two seven four eight nine and I submitted it on Monday.", duration: 4.7, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-041", audioDescription: "Confident speaker, no hesitation", groundTruth: "I need to add a secondary authorized user to my account with full transaction privileges.", duration: 4.3, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-042", audioDescription: "Clear English, scheduling", groundTruth: "Please book me for the nine AM slot on Monday the twenty-third at the downtown branch.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-043", audioDescription: "Standard call quality, complaint", groundTruth: "The technician who came to my house last Friday left without completing the installation.", duration: 4.4, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-044", audioDescription: "Clear speech, subscription", groundTruth: "I signed up for the free trial but now I'm being charged without any prior notification.", duration: 4.3, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-045", audioDescription: "Native English, hardware support", groundTruth: "The display shows error code E-four-seven every time I try to print a document wirelessly.", duration: 4.5, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-046", audioDescription: "Clear voice, insurance claim", groundTruth: "My policy number is A-B-one-two-three-four-five and I need to file a claim for water damage.", duration: 4.6, difficulty: "medium", useCase: "agent_assist" },
+  { id: "clean-047", audioDescription: "Professional English, feedback", groundTruth: "I want to commend your agent Sarah for her exceptional help during my last interaction.", duration: 4.0, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-048", audioDescription: "Clear diction, account recovery", groundTruth: "I've been locked out of my account after three failed login attempts and need to reset access.", duration: 4.5, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-049", audioDescription: "Standard English, delivery issue", groundTruth: "The tracking says delivered but I never received the package and my neighbor didn't take it.", duration: 4.7, difficulty: "easy", useCase: "agent_assist" },
+  { id: "clean-050", audioDescription: "Clear audio, long account number", groundTruth: "My membership ID is five five three nine two zero one four seven six and it expires in December.", duration: 5.0, difficulty: "medium", useCase: "agent_assist" },
 ];
 
-const TTS_SAMPLES: TTSSample[] = [
-  { id: "tts-001", text: "Welcome to NICE customer support. How may I assist you today?", expectedDuration: 3.5, category: "greeting" },
-  { id: "tts-002", text: "Your current account balance is four hundred and thirty-two dollars and seventeen cents.", expectedDuration: 4.0, category: "numbers" },
-  { id: "tts-003", text: "I understand your frustration. Let me look into this issue right away and find a solution for you.", expectedDuration: 4.5, category: "empathy" },
-  { id: "tts-004", text: "Your appointment has been confirmed for Thursday, March twenty-seventh at two thirty PM.", expectedDuration: 4.0, category: "scheduling" },
-  { id: "tts-005", text: "For security purposes, I'll need to verify your identity. Could you please provide your date of birth?", expectedDuration: 4.5, category: "verification" },
-  { id: "tts-006", text: "Thank you for calling. Your reference number is A-B-C-one-two-three-four-five. Is there anything else I can help you with?", expectedDuration: 5.5, category: "closing" },
-  { id: "tts-007", text: "I'm transferring you to our technical support department. Please hold while I connect you.", expectedDuration: 4.0, category: "transfer" },
-  { id: "tts-008", text: "Based on your usage patterns, I'd recommend upgrading to our premium plan which includes unlimited data and priority support.", expectedDuration: 5.0, category: "upsell" },
+// ── STT Dataset: NICE-CX-Noisy-EN ─────────────────────────────────────────────
+// 50 noisy/IVR audio clips, challenging conditions
+const NICE_CX_NOISY_EN: STTSample[] = [
+  { id: "noisy-001", audioDescription: "Background call center noise, multiple agents", groundTruth: "I need to check the balance on my account please.", duration: 3.2, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-002", audioDescription: "Phone quality audio with static", groundTruth: "What are your business hours on weekends?", duration: 2.8, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-003", audioDescription: "Mobile call, street noise background", groundTruth: "I want to pay my bill using a credit card right now.", duration: 3.5, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-004", audioDescription: "Low bandwidth VOIP call", groundTruth: "Press one for English or press two for Spanish.", duration: 3.0, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-005", audioDescription: "Echo on the line, tunnel environment", groundTruth: "I am calling to report a problem with my service.", duration: 3.3, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-006", audioDescription: "TV noise in background, home environment", groundTruth: "Can I speak to a customer service representative please?", duration: 3.6, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-007", audioDescription: "Car speakerphone, road noise", groundTruth: "I'd like to report my card as lost or stolen.", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-008", audioDescription: "Crowd noise, public space", groundTruth: "My account number is three four seven eight nine.", duration: 3.4, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-009", audioDescription: "Older mobile phone, compressed audio", groundTruth: "I haven't received my statement this month.", duration: 3.0, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-010", audioDescription: "Airport announcements in background", groundTruth: "Please connect me to the billing department.", duration: 3.2, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-011", audioDescription: "Landline with interference", groundTruth: "I need to activate my new debit card.", duration: 2.9, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-012", audioDescription: "Restaurant background noise", groundTruth: "What is the status of my recent transaction?", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-013", audioDescription: "Baby crying in background", groundTruth: "I want to know my current usage for this billing cycle.", duration: 3.5, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-014", audioDescription: "Construction noise outside", groundTruth: "Can you read back my account details please?", duration: 3.2, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-015", audioDescription: "Heavy breathing, elderly caller", groundTruth: "I need help resetting my PIN number.", duration: 3.0, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-016", audioDescription: "Phone handset noise, poor mic", groundTruth: "Transfer me to technical support please.", duration: 2.8, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-017", audioDescription: "Wind noise, outdoor caller", groundTruth: "I want to upgrade my data plan to unlimited.", duration: 3.3, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-018", audioDescription: "Compression artifacts, VoIP", groundTruth: "My phone number is five five five three two one.", duration: 3.1, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-019", audioDescription: "Music on hold bleed-through", groundTruth: "I am calling about my recent order delivery.", duration: 3.0, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-020", audioDescription: "Satellite phone, delay and distortion", groundTruth: "I need to make a payment arrangement for overdue balance.", duration: 4.2, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-021", audioDescription: "Low mic volume, quiet speaker", groundTruth: "My zip code is eight zero two one four.", duration: 2.6, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-022", audioDescription: "Multiple call drops and reconnects", groundTruth: "I would like to add international roaming to my plan.", duration: 3.4, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-023", audioDescription: "Heavy accent, IVR interaction", groundTruth: "I want to check the last five transactions on my account.", duration: 3.6, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-024", audioDescription: "Phone held away from mouth", groundTruth: "Please send me my statement via email instead of mail.", duration: 3.5, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-025", audioDescription: "Children playing loudly in background", groundTruth: "I need to find the nearest service center to my location.", duration: 3.7, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-026", audioDescription: "Noisy keyboard typing while speaking", groundTruth: "What documents do I need to provide for identity verification?", duration: 4.0, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-027", audioDescription: "Speakerphone with room reverb", groundTruth: "I want to schedule a callback from your team today.", duration: 3.2, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-028", audioDescription: "Network packet loss, choppy audio", groundTruth: "Can you confirm my order was placed successfully?", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-029", audioDescription: "Bus interior noise", groundTruth: "I need to dispute a charge on my credit card.", duration: 3.0, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-030", audioDescription: "Microwave interference on cordless phone", groundTruth: "My account has been locked and I need help accessing it.", duration: 3.4, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-031", audioDescription: "Muffled audio, speaking through mask", groundTruth: "I'd like to report a fraudulent transaction on my account.", duration: 3.8, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-032", audioDescription: "Loud HVAC noise, office", groundTruth: "What is the earliest available appointment slot?", duration: 3.0, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-033", audioDescription: "Caller is eating while speaking", groundTruth: "I need to verify my personal information for security purposes.", duration: 3.5, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-034", audioDescription: "Rain and thunder background", groundTruth: "My internet connection keeps dropping every few minutes.", duration: 3.3, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-035", audioDescription: "Concert venue ambient noise", groundTruth: "I want to cancel my subscription effective immediately.", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-036", audioDescription: "Cell tower handoff, audio gap", groundTruth: "I haven't received my replacement card in the mail yet.", duration: 3.4, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-037", audioDescription: "PSTN to VoIP conversion noise", groundTruth: "Please look up my account using my social security number.", duration: 3.6, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-038", audioDescription: "Whisper mode, quiet environment", groundTruth: "I am in a meeting right now but this is urgent.", duration: 3.2, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-039", audioDescription: "Clipping distortion, too loud", groundTruth: "The error message says system unavailable try again later.", duration: 3.5, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-040", audioDescription: "Multi-talker background, café", groundTruth: "I need the tracking number for my package please.", duration: 3.0, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-041", audioDescription: "Cross-talk from adjacent call", groundTruth: "When will the outage in my area be resolved?", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-042", audioDescription: "Elderly caller, fragile voice", groundTruth: "I'm having trouble understanding the automated menu options.", duration: 3.7, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-043", audioDescription: "Thick regional accent with noise", groundTruth: "I want to know if I qualify for the loyalty discount.", duration: 3.3, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-044", audioDescription: "Crying caller, emotional distress", groundTruth: "I've been waiting for a resolution for over two weeks.", duration: 3.8, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-045", audioDescription: "Game audio in background", groundTruth: "I need to update my primary email address on file.", duration: 3.0, difficulty: "medium", useCase: "ivr" },
+  { id: "noisy-046", audioDescription: "Reverberant bathroom acoustics", groundTruth: "How long will it take to process my refund request?", duration: 3.4, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-047", audioDescription: "Fax machine squeal in background", groundTruth: "I need to add a new payment method to my account.", duration: 3.1, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-048", audioDescription: "Intermittent audio dropout", groundTruth: "What is the penalty fee for early contract termination?", duration: 3.5, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-049", audioDescription: "Heavily accented speaker, background TV", groundTruth: "I want to know when my free trial period ends.", duration: 3.2, difficulty: "hard", useCase: "ivr" },
+  { id: "noisy-050", audioDescription: "Poor quality speakerphone, large room", groundTruth: "Please connect me to the fraud prevention department.", duration: 3.3, difficulty: "hard", useCase: "ivr" },
 ];
 
-const V2V_SAMPLES: V2VSample[] = [
-  { id: "v2v-001", scenario: "Customer calls to check order status. Order #12345 was shipped yesterday via FedEx.", expectedBehavior: "Greet customer, ask for order number, provide shipping status and tracking info", turns: 4, category: "order_inquiry" },
-  { id: "v2v-002", scenario: "Customer wants to cancel their subscription. Try to retain with 20% discount offer.", expectedBehavior: "Empathize, ask reason, offer discount, process if customer insists", turns: 6, category: "retention" },
-  { id: "v2v-003", scenario: "Customer reports internet outage. Known outage in their area, ETA 2 hours.", expectedBehavior: "Acknowledge issue, check outage status, provide ETA, offer credit", turns: 5, category: "technical_support" },
-  { id: "v2v-004", scenario: "Customer wants to schedule a callback from a specialist for a complex billing dispute.", expectedBehavior: "Collect information, check specialist availability, confirm callback", turns: 5, category: "scheduling" },
-  { id: "v2v-005", scenario: "Customer interrupts mid-sentence to change their request from billing to technical support.", expectedBehavior: "Handle interruption gracefully, acknowledge topic change, redirect", turns: 4, category: "interruption_handling" },
-  { id: "v2v-006", scenario: "Customer speaks with heavy accent asking about international roaming charges.", expectedBehavior: "Understand accented speech, provide accurate roaming info, offer plan options", turns: 5, category: "accent_handling" },
+// ── TTS Dataset: NICE-TTS-IVR-EN ──────────────────────────────────────────────
+// 30 IVR prompts
+const NICE_TTS_IVR_EN: TTSSample[] = [
+  { id: "ivr-001", text: "Welcome to NICE customer service. Please say or press one for account information, two for billing, three for technical support, or four for all other inquiries.", expectedDuration: 7.0, category: "main_menu", useCase: "ivr" },
+  { id: "ivr-002", text: "I'm sorry, I didn't understand that. Please try again.", expectedDuration: 2.8, category: "error", useCase: "ivr" },
+  { id: "ivr-003", text: "Please hold while I transfer your call. Your estimated wait time is approximately five minutes.", expectedDuration: 4.2, category: "hold", useCase: "ivr" },
+  { id: "ivr-004", text: "For faster service, please have your account number ready when our agent answers.", expectedDuration: 4.5, category: "info", useCase: "ivr" },
+  { id: "ivr-005", text: "Your account balance is two hundred and forty-seven dollars and sixty cents. Is there anything else I can help you with?", expectedDuration: 5.5, category: "balance", useCase: "ivr" },
+  { id: "ivr-006", text: "I'm connecting you to the next available agent. Thank you for your patience.", expectedDuration: 3.8, category: "transfer", useCase: "ivr" },
+  { id: "ivr-007", text: "To verify your identity, please say or enter your date of birth in month day year format.", expectedDuration: 4.8, category: "verification", useCase: "ivr" },
+  { id: "ivr-008", text: "Your payment of one hundred and fifty dollars has been processed successfully. You will receive a confirmation email shortly.", expectedDuration: 5.2, category: "confirmation", useCase: "ivr" },
+  { id: "ivr-009", text: "Our offices are open Monday through Friday from eight AM to eight PM and Saturday from nine AM to five PM Eastern Time.", expectedDuration: 6.0, category: "hours", useCase: "ivr" },
+  { id: "ivr-010", text: "I'm sorry, we are experiencing high call volume. Your call is very important to us. Please stay on the line.", expectedDuration: 5.0, category: "wait", useCase: "ivr" },
+  { id: "ivr-011", text: "You have reached the billing department. For payment options, press one. For invoice requests, press two. To speak with an agent, press zero.", expectedDuration: 6.2, category: "submenu", useCase: "ivr" },
+  { id: "ivr-012", text: "We're sorry to hear you're having trouble. Let me connect you with a specialist who can help.", expectedDuration: 4.0, category: "empathy", useCase: "ivr" },
+  { id: "ivr-013", text: "Your new PIN has been set successfully. Please remember it for future transactions.", expectedDuration: 3.8, category: "confirmation", useCase: "ivr" },
+  { id: "ivr-014", text: "To protect your security, this call may be recorded for quality assurance purposes.", expectedDuration: 4.2, category: "disclaimer", useCase: "ivr" },
+  { id: "ivr-015", text: "The tracking number for your order is seven eight four three two one nine. You can use this to track your shipment online.", expectedDuration: 5.5, category: "order", useCase: "ivr" },
+  { id: "ivr-016", text: "Your service has been successfully upgraded. New features will be available within twenty-four hours.", expectedDuration: 4.5, category: "upgrade", useCase: "ivr" },
+  { id: "ivr-017", text: "We've detected unusual activity on your account. For security, we've temporarily placed a hold. Please press one to verify your identity.", expectedDuration: 6.5, category: "security", useCase: "ivr" },
+  { id: "ivr-018", text: "Thank you for calling. Your case number is C-R-M-four-five-six-seven-eight. A specialist will follow up within two business days.", expectedDuration: 6.0, category: "closing", useCase: "ivr" },
+  { id: "ivr-019", text: "To hear these options again, press the star key. To return to the main menu, press the pound key.", expectedDuration: 4.3, category: "navigation", useCase: "ivr" },
+  { id: "ivr-020", text: "I found one appointment available this Friday at three PM. Would you like me to book that for you? Press one for yes or two for no.", expectedDuration: 5.8, category: "scheduling", useCase: "ivr" },
+  { id: "ivr-021", text: "Your contract renewal is due in thirty days. Press one to renew now and save ten percent.", expectedDuration: 4.5, category: "renewal", useCase: "ivr" },
+  { id: "ivr-022", text: "The technician has been dispatched and will arrive between two and four PM today. You'll receive an SMS notification thirty minutes before arrival.", expectedDuration: 6.2, category: "dispatch", useCase: "ivr" },
+  { id: "ivr-023", text: "You've reached our after-hours service. For emergencies press one. For callbacks press two.", expectedDuration: 4.8, category: "after_hours", useCase: "ivr" },
+  { id: "ivr-024", text: "Your refund of eighty-nine dollars and ninety-nine cents will be credited to your account within three to five business days.", expectedDuration: 5.5, category: "refund", useCase: "ivr" },
+  { id: "ivr-025", text: "I'm unable to locate an account matching that information. Please press one to try again or press zero for an agent.", expectedDuration: 5.0, category: "not_found", useCase: "ivr" },
+  { id: "ivr-026", text: "Your activation is complete. Your new service will begin on the first of next month.", expectedDuration: 4.0, category: "activation", useCase: "ivr" },
+  { id: "ivr-027", text: "To authorize this transaction press one. To decline press two. To report this as unauthorized press three.", expectedDuration: 5.2, category: "authorization", useCase: "ivr" },
+  { id: "ivr-028", text: "We apologize for any inconvenience. A credit of twenty dollars has been applied to your account.", expectedDuration: 4.3, category: "credit", useCase: "ivr" },
+  { id: "ivr-029", text: "Your password reset link has been sent to the email address on file. It will expire in sixty minutes.", expectedDuration: 4.8, category: "password", useCase: "ivr" },
+  { id: "ivr-030", text: "Thank you for being a valued customer for over five years. We appreciate your loyalty.", expectedDuration: 4.0, category: "loyalty", useCase: "ivr" },
 ];
+
+// ── TTS Dataset: NICE-TTS-Agent-EN ────────────────────────────────────────────
+// 30 Agent Response prompts
+const NICE_TTS_AGENT_EN: TTSSample[] = [
+  { id: "agent-001", text: "Thank you for calling NICE support. My name is Alex and I'll be assisting you today. Could I get your account number to pull up your file?", expectedDuration: 6.0, category: "greeting", useCase: "agent_response" },
+  { id: "agent-002", text: "I completely understand your frustration and I sincerely apologize for the inconvenience this has caused you.", expectedDuration: 4.5, category: "empathy", useCase: "agent_response" },
+  { id: "agent-003", text: "I can see here that the charge of two hundred and fifteen dollars was applied on the third of this month. Let me investigate that further for you.", expectedDuration: 5.5, category: "account_review", useCase: "agent_response" },
+  { id: "agent-004", text: "I'm going to place you on a brief hold while I look into your account. This will take no more than two minutes. Is that okay with you?", expectedDuration: 5.8, category: "hold_notice", useCase: "agent_response" },
+  { id: "agent-005", text: "Great news! I've successfully processed your refund and it should appear on your statement within three to five business days.", expectedDuration: 5.2, category: "resolution", useCase: "agent_response" },
+  { id: "agent-006", text: "Based on what you've described, it sounds like a software compatibility issue. I'd like to walk you through some troubleshooting steps.", expectedDuration: 6.0, category: "technical", useCase: "agent_response" },
+  { id: "agent-007", text: "I've updated your billing address to the new location you provided. You'll receive a confirmation email at the address on file.", expectedDuration: 5.3, category: "update", useCase: "agent_response" },
+  { id: "agent-008", text: "I understand this has been a difficult situation and I want you to know that I'm here to help you find the best possible solution.", expectedDuration: 5.5, category: "empathy", useCase: "agent_response" },
+  { id: "agent-009", text: "Your case has been escalated to our senior technical team and you can expect a follow-up within twenty-four to forty-eight business hours.", expectedDuration: 5.8, category: "escalation", useCase: "agent_response" },
+  { id: "agent-010", text: "I've waived the late payment fee as a one-time courtesy given your excellent payment history with us.", expectedDuration: 4.8, category: "waiver", useCase: "agent_response" },
+  { id: "agent-011", text: "The package shows as delivered yesterday at two thirty-seven PM according to our tracking system. Was anyone home at that time?", expectedDuration: 5.6, category: "delivery", useCase: "agent_response" },
+  { id: "agent-012", text: "I've noted your account with the details of our conversation today and assigned you case number seven seven four nine three.", expectedDuration: 5.0, category: "documentation", useCase: "agent_response" },
+  { id: "agent-013", text: "Would you like me to schedule a technician visit? We have openings this Thursday between ten AM and noon or Friday afternoon.", expectedDuration: 5.8, category: "scheduling", useCase: "agent_response" },
+  { id: "agent-014", text: "I can offer you a twenty percent discount on your next three billing cycles as compensation for the service disruption.", expectedDuration: 5.2, category: "compensation", useCase: "agent_response" },
+  { id: "agent-015", text: "I'm transferring you to our specialized retention team who can provide you with our best available offers for keeping your service.", expectedDuration: 5.5, category: "transfer", useCase: "agent_response" },
+  { id: "agent-016", text: "Your account has been flagged for our premium loyalty program. You're eligible for additional benefits starting next month.", expectedDuration: 5.0, category: "loyalty", useCase: "agent_response" },
+  { id: "agent-017", text: "I've verified your identity successfully. Let me now access your full account details to assist you.", expectedDuration: 4.5, category: "verification", useCase: "agent_response" },
+  { id: "agent-018", text: "The outage in your area is a known issue and our engineering team is actively working on it. The estimated resolution time is six PM today.", expectedDuration: 5.8, category: "outage", useCase: "agent_response" },
+  { id: "agent-019", text: "I completely understand your concern about data privacy. All your personal information is encrypted and secured in compliance with industry standards.", expectedDuration: 5.5, category: "privacy", useCase: "agent_response" },
+  { id: "agent-020", text: "Since this is your first billing dispute, I'd like to offer you a full credit for the amount in question while we investigate.", expectedDuration: 5.2, category: "billing_dispute", useCase: "agent_response" },
+  { id: "agent-021", text: "I can see that you've been a customer with us for seven years. Thank you so much for your continued loyalty.", expectedDuration: 4.8, category: "loyalty", useCase: "agent_response" },
+  { id: "agent-022", text: "Let me pull up your order history. I'm showing the last five orders placed over the past ninety days. Which one would you like to discuss?", expectedDuration: 6.0, category: "order_history", useCase: "agent_response" },
+  { id: "agent-023", text: "Your subscription has been successfully cancelled. You'll retain access to all features until the end of your current billing period.", expectedDuration: 5.5, category: "cancellation", useCase: "agent_response" },
+  { id: "agent-024", text: "I'm setting up a payment plan for you. You'll be charged thirty-three dollars on the first of each month for the next three months.", expectedDuration: 5.8, category: "payment_plan", useCase: "agent_response" },
+  { id: "agent-025", text: "Just to confirm, I'm sending a verification code to your mobile number ending in seven four nine. Please let me know when you receive it.", expectedDuration: 5.5, category: "verification", useCase: "agent_response" },
+  { id: "agent-026", text: "Your issue has been fully resolved. Is there anything else I can assist you with today?", expectedDuration: 3.8, category: "closing", useCase: "agent_response" },
+  { id: "agent-027", text: "I've sent you an email with all the details of our conversation today including the resolution and next steps.", expectedDuration: 5.0, category: "follow_up", useCase: "agent_response" },
+  { id: "agent-028", text: "I want to make sure you're completely satisfied before we end this call. On a scale of one to ten how would you rate your experience today?", expectedDuration: 6.0, category: "satisfaction", useCase: "agent_response" },
+  { id: "agent-029", text: "The senior specialist has reviewed your case and approved an exception. We'll be processing the full refund within two business days.", expectedDuration: 5.5, category: "exception", useCase: "agent_response" },
+  { id: "agent-030", text: "Thank you so much for calling and for giving us the opportunity to resolve this for you. Have a wonderful day.", expectedDuration: 4.5, category: "farewell", useCase: "agent_response" },
+];
+
+// ── V2V Dataset: NICE-V2V-Support-EN ──────────────────────────────────────────
+// 10 Customer Support conversation scripts
+const NICE_V2V_SUPPORT_EN: V2VSample[] = [
+  { id: "support-001", scenario: "Customer calls to report a billing discrepancy. They were charged twice for the same subscription in March. Account shows duplicate transaction on March 15th.", expectedBehavior: "Verify identity, confirm duplicate charge, process refund, send confirmation email, document case", turns: 6, category: "billing_dispute", useCase: "customer_support" },
+  { id: "support-002", scenario: "Customer's internet service has been down for 12 hours. They work from home and are losing productivity. Outage is known and being resolved.", expectedBehavior: "Acknowledge urgency, verify outage status, provide ETA, offer bill credit, escalate if needed", turns: 7, category: "technical_support", useCase: "customer_support" },
+  { id: "support-003", scenario: "Customer wants to cancel service after 8 years due to competitor offer. Retention budget allows up to 30% discount for 6 months.", expectedBehavior: "Express appreciation, understand reason, match/beat competitor offer, document outcome", turns: 8, category: "retention", useCase: "customer_support" },
+  { id: "support-004", scenario: "Customer received damaged product (laptop screen cracked in shipping). Order #89234. They need replacement urgently for work meeting tomorrow.", expectedBehavior: "Apologize, verify order, offer expedited replacement, arrange pickup of damaged unit", turns: 7, category: "damaged_goods", useCase: "customer_support" },
+  { id: "support-005", scenario: "Elderly customer confused about new app interface after update. They can't find how to pay bills. Needs patient step-by-step guidance.", expectedBehavior: "Be patient, use simple language, provide step-by-step instructions, offer follow-up callback", turns: 9, category: "digital_assistance", useCase: "customer_support" },
+  { id: "support-006", scenario: "Customer reports unauthorized transactions totaling $847 on account. Suspects identity theft. Card needs to be blocked immediately.", expectedBehavior: "Treat as urgent, block card immediately, initiate fraud investigation, issue new card, file police report guidance", turns: 8, category: "fraud", useCase: "customer_support" },
+  { id: "support-007", scenario: "Business customer wants to upgrade 50 user accounts to enterprise tier before end of quarter for tax purposes. Complex pricing discussion.", expectedBehavior: "Understand timeline, calculate bulk pricing, apply volume discount, coordinate with sales team", turns: 7, category: "enterprise_sales", useCase: "customer_support" },
+  { id: "support-008", scenario: "Customer missed appointment and was charged no-show fee of $75. Claims they called to cancel 2 hours before but agent said it was fine.", expectedBehavior: "Review call logs, verify customer claim, use judgment to waive or partially waive fee", turns: 6, category: "fee_dispute", useCase: "customer_support" },
+  { id: "support-009", scenario: "Customer is moving abroad in 2 weeks and needs to transfer service to international plan or pause account. Multiple options available.", expectedBehavior: "Explore options, explain international plans, account pause option, data migration, set expectations", turns: 8, category: "account_management", useCase: "customer_support" },
+  { id: "support-010", scenario: "Customer is upset that promised callback never occurred. This is their 5th contact for same issue. Issue involves interplay between billing and tech teams.", expectedBehavior: "Acknowledge failure, deep apology, take ownership, internal coordination, ensure resolution this call", turns: 9, category: "escalation", useCase: "customer_support" },
+];
+
+// ── V2V Dataset: NICE-V2V-IVR-EN ──────────────────────────────────────────────
+// 10 Conversational IVR scripts
+const NICE_V2V_IVR_EN: V2VSample[] = [
+  { id: "ivr-s-001", scenario: "Customer calls IVR to check account balance. They respond 'account balance' to the main menu. System must authenticate and read balance.", expectedBehavior: "Recognize intent, authenticate via DOB, read balance clearly, offer additional options", turns: 4, category: "balance_check", useCase: "conversational_ivr" },
+  { id: "ivr-s-002", scenario: "Customer navigates IVR to make a payment but gives an ambiguous response 'I want to pay' without specifying amount or method.", expectedBehavior: "Understand intent, disambiguate amount, accept payment method, confirm payment, send receipt", turns: 6, category: "payment", useCase: "conversational_ivr" },
+  { id: "ivr-s-003", scenario: "Customer asks to speak to a 'real person' multiple times after each IVR prompt. System should gracefully handle opt-out requests.", expectedBehavior: "Detect escalation intent, acknowledge, offer estimated wait time, queue for agent", turns: 3, category: "agent_request", useCase: "conversational_ivr" },
+  { id: "ivr-s-004", scenario: "Customer reports technical issue using vague language: 'my thing isn't working.' IVR must disambiguate which service or device.", expectedBehavior: "Ask clarifying questions, narrow down service type, route to correct technical queue", turns: 5, category: "triage", useCase: "conversational_ivr" },
+  { id: "ivr-s-005", scenario: "Customer interrupts mid-prompt to change topic from billing to reporting lost card. IVR must handle interruption gracefully.", expectedBehavior: "Detect interruption, stop current flow, acknowledge new intent, pivot to card loss flow", turns: 4, category: "interruption", useCase: "conversational_ivr" },
+  { id: "ivr-s-006", scenario: "Non-native English speaker interacting with IVR. Speech is accented and sometimes uses non-standard phrasing. May ask for repetition.", expectedBehavior: "Recognize accented speech, offer repeat prompts, use simple confirmations, route correctly", turns: 6, category: "accent_handling", useCase: "conversational_ivr" },
+  { id: "ivr-s-007", scenario: "Customer calls and stays silent after initial greeting. IVR must handle silence, re-prompt, and offer keypad fallback.", expectedBehavior: "Re-prompt after silence, offer keypad option after 2nd silence, graceful fallback", turns: 4, category: "silence_handling", useCase: "conversational_ivr" },
+  { id: "ivr-s-008", scenario: "Customer provides wrong answer to security question. IVR must handle failed authentication gracefully without locking account.", expectedBehavior: "Re-prompt politely once, offer alternative verification method, lock after 3 failures", turns: 5, category: "authentication", useCase: "conversational_ivr" },
+  { id: "ivr-s-009", scenario: "Customer asks a question outside IVR's scope: 'What's the weather today?' IVR must handle out-of-domain gracefully.", expectedBehavior: "Acknowledge inability, redirect to available services, maintain positive tone", turns: 3, category: "out_of_domain", useCase: "conversational_ivr" },
+  { id: "ivr-s-010", scenario: "Customer speaks very fast and runs sentences together. IVR captures 'wanna-check-my-bill-and-also-pay-it-in-one-go'. Must parse compound intent.", expectedBehavior: "Parse compound intent, confirm both actions, process sequentially, confirm completion", turns: 6, category: "compound_intent", useCase: "conversational_ivr" },
+];
+
+// ─── Dataset Registry ─────────────────────────────────────────────────────────
+
+const STT_DATASETS: Record<string, STTSample[]> = {
+  "NICE-CX-Clean-EN": NICE_CX_CLEAN_EN,
+  "NICE-CX-Noisy-EN": NICE_CX_NOISY_EN,
+  // Legacy IDs for backward compatibility
+  standard: NICE_CX_CLEAN_EN,
+  noisy: NICE_CX_NOISY_EN,
+};
+
+const TTS_DATASETS: Record<string, TTSSample[]> = {
+  "NICE-TTS-IVR-EN": NICE_TTS_IVR_EN,
+  "NICE-TTS-Agent-EN": NICE_TTS_AGENT_EN,
+  // Legacy IDs
+  standard: NICE_TTS_IVR_EN,
+  emotional: NICE_TTS_AGENT_EN,
+};
+
+const V2V_DATASETS: Record<string, V2VSample[]> = {
+  "NICE-V2V-Support-EN": NICE_V2V_SUPPORT_EN,
+  "NICE-V2V-IVR-EN": NICE_V2V_IVR_EN,
+  // Legacy IDs
+  standard: NICE_V2V_SUPPORT_EN,
+  complex: NICE_V2V_IVR_EN,
+};
+
+export const DATASET_CATALOG = {
+  STT: [
+    { id: "NICE-CX-Clean-EN", name: "NICE-CX-Clean-EN", useCase: "Agent Assist", samples: 50, description: "50 clean contact-center audio clips covering greetings, billing inquiries, technical support, and agent-assist interactions." },
+    { id: "NICE-CX-Noisy-EN", name: "NICE-CX-Noisy-EN", useCase: "IVR / Noisy", samples: 50, description: "50 clips recorded in challenging conditions: background noise, mobile/VoIP artifacts, accented speech, and IVR interactions." },
+  ],
+  TTS: [
+    { id: "NICE-TTS-IVR-EN", name: "NICE-TTS-IVR-EN", useCase: "IVR Prompts", samples: 30, description: "30 IVR prompt scripts: main menus, confirmations, payments, scheduling, and system messages." },
+    { id: "NICE-TTS-Agent-EN", name: "NICE-TTS-Agent-EN", useCase: "Agent Response", samples: 30, description: "30 agent response scripts: greetings, empathy, resolutions, escalations, and farewells." },
+  ],
+  V2V: [
+    { id: "NICE-V2V-Support-EN", name: "NICE-V2V-Support-EN", useCase: "Customer Support", samples: 10, description: "10 multi-turn customer support conversation scripts covering billing disputes, technical issues, fraud, and retention." },
+    { id: "NICE-V2V-IVR-EN", name: "NICE-V2V-IVR-EN", useCase: "Conversational IVR", samples: 10, description: "10 conversational IVR scripts testing intent recognition, interruption handling, authentication, and fallback behaviors." },
+  ],
+};
 
 // ─── Evaluation Pipeline ─────────────────────────────────────────────────────
 
@@ -113,6 +334,7 @@ async function evaluateSTT(
 Audio: ${sample.audioDescription}
 Ground Truth: "${sample.groundTruth}"
 Difficulty: ${sample.difficulty}
+Use Case: ${sample.useCase}
 Vendor endpoint: ${config.endpointUrl ?? "default"}
 Model: ${config.modelId ?? "default"}
 
@@ -199,6 +421,7 @@ async function evaluateTTS(
 
 Text: "${sample.text}"
 Category: ${sample.category}
+Use Case: ${sample.useCase}
 Expected Duration: ${sample.expectedDuration}s
 Vendor endpoint: ${config.endpointUrl ?? "default"}
 Model: ${config.modelId ?? "default"}
@@ -285,6 +508,7 @@ Scenario: ${sample.scenario}
 Expected behavior: ${sample.expectedBehavior}
 Expected turns: ${sample.turns}
 Category: ${sample.category}
+Use Case: ${sample.useCase}
 Vendor endpoint: ${config.endpointUrl ?? "default"}
 Model: ${config.modelId ?? "default"}
 
@@ -400,6 +624,27 @@ Provide a brief comparison highlighting where the evaluated model stands relativ
 // ─── Main Agent ──────────────────────────────────────────────────────────────
 
 export async function runEvaluation(request: EvaluationRequest): Promise<EvaluationRunResult> {
+  // Select dataset by name (spec §8.2) with legacy fallback
+  const defaultDatasetId =
+    request.evaluationType === "STT"
+      ? "NICE-CX-Clean-EN"
+      : request.evaluationType === "TTS"
+        ? "NICE-TTS-IVR-EN"
+        : "NICE-V2V-Support-EN";
+
+  const datasetId = request.dataset ?? defaultDatasetId;
+
+  const sttSamples = STT_DATASETS[datasetId] ?? STT_DATASETS["NICE-CX-Clean-EN"] ?? NICE_CX_CLEAN_EN;
+  const ttsSamples = TTS_DATASETS[datasetId] ?? TTS_DATASETS["NICE-TTS-IVR-EN"] ?? NICE_TTS_IVR_EN;
+  const v2vSamples = V2V_DATASETS[datasetId] ?? V2V_DATASETS["NICE-V2V-Support-EN"] ?? NICE_V2V_SUPPORT_EN;
+
+  const totalSamples =
+    request.evaluationType === "STT"
+      ? sttSamples.length
+      : request.evaluationType === "TTS"
+        ? ttsSamples.length
+        : v2vSamples.length;
+
   // Create evaluation record
   const evaluation = await prisma.evaluation.create({
     data: {
@@ -408,14 +653,9 @@ export async function runEvaluation(request: EvaluationRequest): Promise<Evaluat
       modelName: request.modelName,
       status: "Running",
       config: request.config as Prisma.InputJsonValue,
-      dataset: request.dataset ?? "standard",
+      dataset: datasetId,
       language: request.language ?? "en",
-      totalSamples:
-        request.evaluationType === "STT"
-          ? STT_SAMPLES.length
-          : request.evaluationType === "TTS"
-            ? TTS_SAMPLES.length
-            : V2V_SAMPLES.length,
+      totalSamples,
       startedAt: new Date(),
     },
   });
@@ -425,13 +665,13 @@ export async function runEvaluation(request: EvaluationRequest): Promise<Evaluat
 
     switch (request.evaluationType) {
       case "STT":
-        metrics = await evaluateSTT(evaluation.id, request.config, STT_SAMPLES);
+        metrics = await evaluateSTT(evaluation.id, request.config, sttSamples);
         break;
       case "TTS":
-        metrics = await evaluateTTS(evaluation.id, request.config, TTS_SAMPLES);
+        metrics = await evaluateTTS(evaluation.id, request.config, ttsSamples);
         break;
       case "V2V":
-        metrics = await evaluateV2V(evaluation.id, request.config, V2V_SAMPLES);
+        metrics = await evaluateV2V(evaluation.id, request.config, v2vSamples);
         break;
       default:
         throw new Error(`Unknown evaluation type: ${request.evaluationType}`);
@@ -446,7 +686,7 @@ export async function runEvaluation(request: EvaluationRequest): Promise<Evaluat
           metricValue: new Prisma.Decimal(metric.value),
           metricUnit: metric.unit,
           sampleId: null,
-          details: null,
+          details: Prisma.JsonNull,
         },
       });
     }

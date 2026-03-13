@@ -34,8 +34,8 @@ export async function POST(request: Request) {
       evaluationType: body.evaluationType,
       modelName: body.modelName,
       config: body.config ?? {},
-      dataset: body.dataset,
-      language: body.language,
+      ...(body.dataset !== undefined && { dataset: body.dataset }),
+      ...(body.language !== undefined && { language: body.language }),
     });
 
     return NextResponse.json(result);
