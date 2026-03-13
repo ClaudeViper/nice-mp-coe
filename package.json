@@ -22,7 +22,9 @@
     "db:seed-registry": "npx tsx prisma/seed-vendor-registry.ts",
     "db:seed-evaluations": "npx tsx prisma/seed-evaluations.ts",
     "db:migrate-registry": "npx tsx prisma/run-migration.ts",
-    "db:migrate-evaluations": "npx tsx prisma/run-migration-evaluations.ts"
+    "db:migrate-evaluations": "npx tsx prisma/run-migration-evaluations.ts",
+    "db:migrate-reports": "npx tsx prisma/run-migration-reports.ts",
+    "db:seed-reports": "npx tsx prisma/seed-reports.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

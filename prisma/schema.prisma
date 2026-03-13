@@ -328,3 +328,38 @@ model EvaluationDataset {
   @@index([type])
   @@map("evaluation_datasets")
 }
+
+// ─── Reports ────────────────────────────────────────────────────────────────
+
+enum ReportType {
+  MonthlyLandscape
+  VendorComparison
+  EvaluationSummary
+  BuildVsBuy
+  IntegrationReadiness
+}
+
+enum ReportStatus {
+  Generating
+  Completed
+  Failed
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  type        ReportType
+  title       String
+  status      ReportStatus @default(Generating)
+  summary     String?
+  content     String?
+  contentHtml String?      @map("content_html")
+  metadata    Json?
+  generatedBy String?      @map("generated_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
+}
