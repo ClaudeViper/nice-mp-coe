@@ -26,6 +26,9 @@ import {
   Zap,
   MapPin,
   Calendar,
+  BookOpen,
+  Sparkles,
+  Clock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,6 +121,16 @@ interface VendorDetail {
       metricUnit: string;
     }>;
   }>;
+}
+
+interface DeploymentGuideline {
+  id: string;
+  productSlug: string | null;
+  content: string;
+  status: string;
+  generatedAt: string;
+  errorMsg: string | null;
+  updatedAt: string;
 }
 
 type TabKey = "overview" | "benchmarks" | "pricing" | "integration" | "evaluations" | "deployment";
@@ -840,9 +853,270 @@ function EvaluationsTab({ vendor }: { vendor: VendorDetail }) {
   );
 }
 
+// ─── Markdown renderer (lightweight, no external deps) ───────────────────────
+
+function MarkdownContent({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith("# ")) {
+      elements.push(<h1 key={i} className="text-lg font-bold mt-4 mb-2" style={{ color: "var(--foreground)" }}>{line.slice(2)}</h1>);
+    } else if (line.startsWith("## ")) {
+      elements.push(<h2 key={i} className="text-sm font-bold mt-4 mb-1.5 pt-3" style={{ color: "#00d4e8", borderTop: "1px solid var(--border)" }}>{line.slice(3)}</h2>);
+    } else if (line.startsWith("### ")) {
+      elements.push(<h3 key={i} className="text-sm font-semibold mt-3 mb-1" style={{ color: "var(--foreground)" }}>{line.slice(4)}</h3>);
+    } else if (line.startsWith("```")) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <pre key={i} className="my-2 rounded-lg p-3 text-xs overflow-x-auto" style={{ background: "rgba(6,15,46,0.6)", color: "#80eef8", border: "1px solid rgba(0,212,232,0.15)" }}>
+          {lang && <span className="text-xs opacity-50 block mb-1">{lang}</span>}
+          <code>{codeLines.join("\n")}</code>
+        </pre>
+      );
+    } else if (line.startsWith("| ")) {
+      // Table
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].startsWith("|")) {
+        if (!lines[i].match(/^\|[-| ]+\|$/)) tableLines.push(lines[i]);
+        i++;
+      }
+      const rows = tableLines.map((r) => r.split("|").filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map((c) => c.trim()));
+      if (rows.length > 0) {
+        elements.push(
+          <div key={i} className="my-2 overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  {rows[0].map((h, hi) => (
+                    <th key={hi} className="text-left px-3 py-1.5 font-semibold" style={{ background: "rgba(0,212,232,0.08)", color: "#00d4e8", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(1).map((row, ri) => (
+                  <tr key={ri} style={{ borderBottom: "1px solid var(--border)" }}>
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-3 py-1.5" style={{ color: "var(--foreground)" }}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        continue;
+      }
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push(
+        <li key={i} className="ml-4 text-sm list-disc" style={{ color: "var(--foreground)" }}>
+          {line.slice(2)}
+        </li>
+      );
+    } else if (/^\d+\. /.test(line)) {
+      elements.push(
+        <li key={i} className="ml-4 text-sm list-decimal" style={{ color: "var(--foreground)" }}>
+          {line.replace(/^\d+\. /, "")}
+        </li>
+      );
+    } else if (line.trim() === "") {
+      elements.push(<div key={i} className="h-2" />);
+    } else {
+      elements.push(
+        <p key={i} className="text-sm leading-relaxed" style={{ color: "var(--foreground)" }}>
+          {line}
+        </p>
+      );
+    }
+    i++;
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
+// ─── Guideline Card ───────────────────────────────────────────────────────────
+
+function GuidelineCard({
+  vendorSlug,
+  productSlug,
+  productName,
+  guideline,
+  onRefreshed,
+}: {
+  vendorSlug: string;
+  productSlug: string | null;
+  productName: string;
+  guideline: DeploymentGuideline | null;
+  onRefreshed: (updated: DeploymentGuideline) => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function generate() {
+    setRunning(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/agents/deployment-guidelines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendor_slug: vendorSlug, product_slug: productSlug }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.status === "Failed") {
+        setErr(data.error ?? "Agent failed");
+      } else {
+        // Reload guidelines
+        const glRes = await fetch(`/api/vendors/${vendorSlug}/deployment-guidelines`);
+        const allGuidelines: DeploymentGuideline[] = await glRes.json();
+        const updated = allGuidelines.find(
+          (g) => g.productSlug === productSlug
+        );
+        if (updated) {
+          onRefreshed(updated);
+          setExpanded(true);
+        }
+      }
+    } catch (e) {
+      setErr(String(e));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const statusColor = !guideline
+    ? "#94a3b8"
+    : guideline.status === "Completed"
+      ? "#10b981"
+      : guideline.status === "Generating"
+        ? "#00d4e8"
+        : "#ef4444";
+
+  return (
+    <Card className="glass-card border-0">
+      <CardContent className="p-5">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0" style={{ background: "rgba(0,212,232,0.1)" }}>
+              <BookOpen className="h-4 w-4" style={{ color: "#00d4e8" }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: "var(--foreground)" }}>
+                {productName}
+              </p>
+              {guideline?.updatedAt && (
+                <p className="text-xs flex items-center gap-1 mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                  <Clock className="h-3 w-3" />
+                  Updated {new Date(guideline.updatedAt).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Status badge */}
+            <span
+              className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{ background: `${statusColor}15`, color: statusColor, border: `1px solid ${statusColor}30` }}
+            >
+              {!guideline ? "Not generated" : guideline.status}
+            </span>
+
+            {/* Expand / collapse (only when content exists) */}
+            {guideline?.status === "Completed" && guideline.content && (
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors"
+                style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+              >
+                {expanded ? "Collapse" : "View"}
+              </button>
+            )}
+
+            {/* Generate / Refresh */}
+            <button
+              onClick={generate}
+              disabled={running}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-60"
+              style={{
+                background: running ? "rgba(0,212,232,0.1)" : "linear-gradient(135deg,rgba(0,212,232,0.2),rgba(124,58,237,0.2))",
+                color: "#00d4e8",
+                border: "1px solid rgba(0,212,232,0.3)",
+              }}
+            >
+              {running ? (
+                <>
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3 w-3" />
+                  {guideline ? "Refresh" : "Generate"}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Error */}
+        {err && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg p-3 text-xs" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
+            <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            {err}
+          </div>
+        )}
+
+        {/* Expanded guideline content */}
+        {expanded && guideline?.status === "Completed" && guideline.content && (
+          <div
+            className="mt-4 rounded-xl p-4"
+            style={{ background: "rgba(255,255,255,0.5)", border: "1px solid var(--border)" }}
+          >
+            <MarkdownContent content={guideline.content} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Deployment Tab ───────────────────────────────────────────────────────────
 
 function DeploymentTab({ vendor }: { vendor: VendorDetail }) {
+  const [guidelines, setGuidelines] = useState<DeploymentGuideline[]>([]);
+  const [glLoading, setGlLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/vendors/${vendor.slug}/deployment-guidelines`)
+      .then((r) => r.ok ? r.json() : [])
+      .then(setGuidelines)
+      .catch(() => setGuidelines([]))
+      .finally(() => setGlLoading(false));
+  }, [vendor.slug]);
+
+  function handleRefreshed(updated: DeploymentGuideline) {
+    setGuidelines((prev) => {
+      const idx = prev.findIndex((g) => g.productSlug === updated.productSlug);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = updated;
+        return next;
+      }
+      return [...prev, updated];
+    });
+  }
+
   const deploymentStyles: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
     Cloud: { icon: <Cloud className="h-5 w-5" />, color: "#00d4e8", bg: "rgba(0,212,232,0.1)" },
     OnPrem: { icon: <Server className="h-5 w-5" />, color: "#94a3b8", bg: "rgba(148,163,184,0.1)" },
@@ -851,102 +1125,95 @@ function DeploymentTab({ vendor }: { vendor: VendorDetail }) {
   };
 
   return (
-    <div className="space-y-5">
-      {vendor.deploymentOptions.length === 0 ? (
-        <Card className="glass-card border-0">
-          <CardContent className="py-12 text-center">
-            <Rocket className="mx-auto h-10 w-10 mb-3" style={{ color: "var(--muted-foreground)", opacity: 0.4 }} />
-            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No deployment options documented.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {vendor.deploymentOptions.map((d) => {
-              const style = deploymentStyles[d.type] ?? { icon: <Cloud className="h-5 w-5" />, color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
-              return (
-                <Card key={d.id} className="glass-card border-0">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: style.bg, color: style.color }}>
-                        {style.icon}
-                      </div>
-                      <h3 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>{d.type}</h3>
+    <div className="space-y-6">
+      {/* ── Deployment Options grid ───────────────────────────────────── */}
+      {vendor.deploymentOptions.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {vendor.deploymentOptions.map((d) => {
+            const style = deploymentStyles[d.type] ?? { icon: <Cloud className="h-5 w-5" />, color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
+            return (
+              <Card key={d.id} className="glass-card border-0">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: style.bg, color: style.color }}>
+                      {style.icon}
                     </div>
-                    {d.details && (
-                      <p className="text-sm mb-3" style={{ color: "var(--muted-foreground)" }}>{d.details}</p>
-                    )}
-                    {d.regions.length > 0 && (
-                      <div>
-                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Available Regions</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {d.regions.map((r) => (
-                            <span key={r} className="rounded-lg px-2 py-0.5 text-xs font-medium" style={{ background: `${style.color}10`, color: style.color, border: `1px solid ${style.color}25` }}>
-                              {r}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Quick Setup Guide */}
-          <Card className="glass-card border-0">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <Rocket className="h-4 w-4" style={{ color: "#7c3aed" }} />
-                Quick Setup Guide
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ol className="space-y-4">
-                {[
-                  {
-                    title: "Obtain API Credentials",
-                    desc: (
-                      <>
-                        Sign up at {vendor.website ? <a href={vendor.website} target="_blank" rel="noopener noreferrer" style={{ color: "#00d4e8" }}>{vendor.name}</a> : vendor.name} and generate API keys from the dashboard.
-                      </>
-                    ),
-                  },
-                  {
-                    title: "Configure CXone Integration",
-                    desc: (
-                      <>
-                        {vendor.niceCompatibility
-                          ? `Use ${vendor.niceCompatibility.integrationMethod ?? "REST API"} to connect. Estimated setup: ${vendor.niceCompatibility.estimatedIntegrationDays ?? "N/A"} days.`
-                          : "Follow vendor documentation for REST API integration."}
-                      </>
-                    ),
-                  },
-                  {
-                    title: "Run Validation Evaluation",
-                    desc: (
-                      <>
-                        Use the <Link href="/evaluate/new" style={{ color: "#00d4e8" }}>Evaluation Runner</Link> to verify performance against benchmarks.
-                      </>
-                    ),
-                  },
-                ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)", color: "white" }}>
-                      {i + 1}
-                    </span>
+                    <h3 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>{d.type}</h3>
+                  </div>
+                  {d.details && (
+                    <p className="text-sm mb-3" style={{ color: "var(--muted-foreground)" }}>{d.details}</p>
+                  )}
+                  {d.regions.length > 0 && (
                     <div>
-                      <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{step.title}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{step.desc}</p>
+                      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Available Regions</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {d.regions.map((r) => (
+                          <span key={r} className="rounded-lg px-2 py-0.5 text-xs font-medium" style={{ background: `${style.color}10`, color: style.color, border: `1px solid ${style.color}25` }}>
+                            {r}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </li>
-                ))}
-              </ol>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Deployment Guidelines per model ──────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="h-4 w-4" style={{ color: "#7c3aed" }} />
+          <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+            AI-Generated Deployment Guidelines
+          </h3>
+          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "rgba(124,58,237,0.1)", color: "#7c3aed", border: "1px solid rgba(124,58,237,0.2)" }}>
+            per model
+          </span>
+        </div>
+        <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
+          Click <strong>Generate</strong> on any model to have the AI agent research and produce step-by-step deployment guidelines, NICE CXone integration steps, and troubleshooting tips.
+        </p>
+
+        {glLoading ? (
+          <div className="flex items-center gap-2 py-6">
+            <RefreshCw className="h-4 w-4 animate-spin" style={{ color: "#00d4e8" }} />
+            <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>Loading guidelines…</span>
+          </div>
+        ) : vendor.products.length === 0 ? (
+          <Card className="glass-card border-0">
+            <CardContent className="py-10 text-center">
+              <Package className="mx-auto h-8 w-8 mb-2" style={{ color: "var(--muted-foreground)", opacity: 0.4 }} />
+              <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>No products registered for this vendor.</p>
             </CardContent>
           </Card>
-        </>
-      )}
+        ) : (
+          <div className="space-y-3">
+            {/* Vendor-level guideline */}
+            <GuidelineCard
+              vendorSlug={vendor.slug}
+              productSlug={null}
+              productName={`${vendor.name} — Vendor Overview`}
+              guideline={guidelines.find((g) => g.productSlug === null) ?? null}
+              onRefreshed={handleRefreshed}
+            />
+
+            {/* Per-product guidelines */}
+            {vendor.products.map((product) => (
+              <GuidelineCard
+                key={product.id}
+                vendorSlug={vendor.slug}
+                productSlug={product.slug}
+                productName={`${product.name}${product.version ? ` (${product.version})` : ""} · ${product.category}`}
+                guideline={guidelines.find((g) => g.productSlug === product.slug) ?? null}
+                onRefreshed={handleRefreshed}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -70,6 +70,7 @@ model Vendor {
   niceCompatibility    NiceCompatibility?
   registryRunLogs      VendorRegistryRunLog[]
   evaluations          Evaluation[]
+  deploymentGuidelines DeploymentGuideline[]
 
   @@map("vendors")
 }
@@ -258,6 +259,27 @@ model VendorRegistryRunLog {
   vendor Vendor? @relation(fields: [vendorId], references: [id])
 
   @@map("vendor_registry_run_log")
+}
+
+// ─── Deployment Guidelines ───────────────────────────────────────────────────
+
+model DeploymentGuideline {
+  id          String    @id @default(cuid())
+  vendorId    String    @map("vendor_id")
+  /// null = vendor-level guideline; set to product slug for per-model guidelines
+  productSlug String?   @map("product_slug")
+  content     String    @db.Text
+  status      String    @default("Completed") // Generating | Completed | Failed
+  generatedAt DateTime  @default(now()) @map("generated_at")
+  errorMsg    String?   @map("error_msg")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, productSlug])
+  @@index([vendorId])
+  @@map("deployment_guidelines")
 }
 
 // ─── Evaluations ────────────────────────────────────────────────────────────
