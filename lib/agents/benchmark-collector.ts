@@ -133,6 +133,262 @@ Return ONLY a JSON array (no markdown, no explanation) matching this schema:
   "language": "en"
 }]`,
   },
+
+  // ── Additional STT metrics: CER, SER, latency ───────────────────────────
+
+  {
+    name: "Papers With Code - CommonVoice",
+    query: "Papers With Code Mozilla Common Voice speech recognition WER CER benchmark 2025 2026",
+    prompt: `Search Papers With Code for Mozilla Common Voice speech recognition benchmarks. Extract WER and CER scores.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "STT",
+  "source_name": "Papers With Code",
+  "source_url": string,
+  "metric_name": string,         // "WER" or "CER"
+  "metric_value": number,        // percentage, e.g. 3.1
+  "metric_unit": "%",
+  "dataset": "CommonVoice",
+  "language": "en"
+}]
+
+Top 20 results only.`,
+  },
+  {
+    name: "Papers With Code - FLEURS",
+    query: "Papers With Code FLEURS multilingual speech recognition benchmark WER 2025 2026",
+    prompt: `Search Papers With Code for the FLEURS multilingual speech recognition benchmark. Extract WER scores for English.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "STT",
+  "source_name": "Papers With Code",
+  "source_url": string,
+  "metric_name": "WER",
+  "metric_value": number,
+  "metric_unit": "%",
+  "dataset": "FLEURS",
+  "language": "en"
+}]
+
+Top 20 results only.`,
+  },
+  {
+    name: "STT CER Benchmarks",
+    query: "character error rate CER speech recognition benchmark Whisper Deepgram AssemblyAI 2025 2026",
+    prompt: `Search for Character Error Rate (CER) benchmarks for major STT models: OpenAI Whisper, Deepgram, AssemblyAI, Google Cloud STT, Azure Speech, NVIDIA Canary/Parakeet.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "STT",
+  "source_name": string,          // the benchmark source
+  "source_url": string,
+  "metric_name": "CER",
+  "metric_value": number,
+  "metric_unit": "%",
+  "dataset": string,              // e.g. "LibriSpeech test-clean"
+  "language": "en"
+}]
+
+Top 20 results only.`,
+  },
+  {
+    name: "STT Latency Benchmarks",
+    query: "speech to text API latency benchmark RTF TTFB real-time factor Whisper Deepgram AssemblyAI 2025 2026",
+    prompt: `Search for latency benchmarks of major STT APIs: OpenAI Whisper, Deepgram, AssemblyAI, Google Cloud STT, Azure Speech, AWS Transcribe, Speechmatics.
+
+Look for Real-Time Factor (RTF), Time to First Byte (TTFB), and end-to-end latency.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "STT",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "RTF", "TTFB", or "end_to_end_latency"
+  "metric_value": number,         // RTF as ratio (e.g. 0.1), latency in ms
+  "metric_unit": string,          // "ratio" for RTF, "ms" for latencies
+  "dataset": "ALL",
+  "language": "en"
+}]`,
+  },
+  {
+    name: "STT Diarization & Punctuation Accuracy",
+    query: "speaker diarization accuracy benchmark DER punctuation accuracy STT 2025 2026",
+    prompt: `Search for speaker diarization accuracy (DER - Diarization Error Rate) and punctuation accuracy benchmarks for STT services: AssemblyAI, Deepgram, Google, Azure, AWS Transcribe, Speechmatics.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "STT",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "DER" (diarization error rate) or "punctuation_accuracy"
+  "metric_value": number,         // percentage
+  "metric_unit": "%",
+  "dataset": string,
+  "language": "en"
+}]`,
+  },
+
+  // ── TTS quality metrics: MOS, naturalness, intelligibility ──────────────
+
+  {
+    name: "TTS MOS Scores",
+    query: "text to speech MOS mean opinion score benchmark ElevenLabs OpenAI Azure Google 2025 2026",
+    prompt: `Search for Mean Opinion Score (MOS) benchmarks for TTS models: ElevenLabs, OpenAI TTS, Azure Neural TTS, Google Cloud TTS, Amazon Polly, NVIDIA, Meta Voicebox.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "TTS",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": "MOS",
+  "metric_value": number,         // 1-5 scale
+  "metric_unit": "score",
+  "dataset": string,              // e.g. "LJSpeech", "LibriTTS", "ALL"
+  "language": "en"
+}]`,
+  },
+  {
+    name: "TTS Naturalness & Intelligibility",
+    query: "TTS naturalness intelligibility benchmark MUSHRA evaluation text-to-speech 2025 2026",
+    prompt: `Search for TTS naturalness and intelligibility evaluation results for major TTS vendors: ElevenLabs, OpenAI, Azure, Google, Amazon, NVIDIA.
+
+Look for MUSHRA scores, naturalness ratings, intelligibility scores, and WER via STT roundtrip tests.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "TTS",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "naturalness", "intelligibility", "roundtrip_WER", "MUSHRA"
+  "metric_value": number,         // percentage or score depending on metric
+  "metric_unit": string,          // "%" or "score"
+  "dataset": string,
+  "language": "en"
+}]`,
+  },
+  {
+    name: "TTS Latency Benchmarks",
+    query: "text to speech API latency TTFB synthesis time benchmark ElevenLabs OpenAI Azure 2025 2026",
+    prompt: `Search for latency benchmarks of major TTS APIs: ElevenLabs, OpenAI TTS, Azure Neural TTS, Google Cloud TTS, Amazon Polly.
+
+Look for Time to First Byte (TTFB) and full synthesis time.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "TTS",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "TTFB" or "synthesis_time"
+  "metric_value": number,         // milliseconds
+  "metric_unit": "ms",
+  "dataset": "ALL",
+  "language": "en"
+}]`,
+  },
+
+  // ── V2V benchmarks ──────────────────────────────────────────────────────
+
+  {
+    name: "V2V Voice Agent Benchmarks",
+    query: "voice-to-voice AI agent benchmark latency turn-taking GPT-4o Gemini realtime API 2025 2026",
+    prompt: `Search for voice-to-voice (V2V) AI agent benchmarks comparing models like OpenAI GPT-4o Realtime, Google Gemini Live, ElevenLabs Conversational AI, Hume AI.
+
+Look for: task completion rate, instruction following accuracy, end-to-end latency, turn-taking latency.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,          // "openai", "google", "elevenlabs", "hume", "retell", "vapi"
+  "model_name": string,
+  "benchmark_type": "V2V",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "task_completion_rate", "instruction_following", "e2e_latency", "turn_taking_latency"
+  "metric_value": number,         // percentage for rates, ms for latency
+  "metric_unit": string,          // "%" or "ms"
+  "dataset": string,
+  "language": "en"
+}]`,
+  },
+  {
+    name: "V2V Quality Metrics",
+    query: "voice agent naturalness persona consistency interruption handling evaluation AI 2025 2026",
+    prompt: `Search for voice-to-voice AI quality evaluations: naturalness, persona consistency, interruption handling for OpenAI GPT-4o Realtime, Google Gemini Live, ElevenLabs, Hume AI, Retell, VAPI.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "V2V",
+  "source_name": string,
+  "source_url": string,
+  "metric_name": string,          // "naturalness", "persona_consistency", "interruption_handling"
+  "metric_value": number,         // score 0-100
+  "metric_unit": "score",
+  "dataset": string,
+  "language": "en"
+}]`,
+  },
+  {
+    name: "V2V Pricing",
+    query: "voice to voice AI API pricing per minute OpenAI realtime Gemini Live ElevenLabs conversational 2025 2026",
+    prompt: `Search for current pricing of voice-to-voice / conversational AI APIs: OpenAI Realtime API, Google Gemini Live, ElevenLabs Conversational AI, Hume AI, Retell, VAPI.
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": "V2V",
+  "source_name": "Vendor Documentation",
+  "source_url": string,
+  "metric_name": "price_per_minute",
+  "metric_value": number,         // USD per minute of conversation
+  "metric_unit": "$/min",
+  "dataset": "ALL",
+  "language": "en"
+}]`,
+  },
+
+  // ── GitHub model cards ──────────────────────────────────────────────────
+
+  {
+    name: "GitHub Model Cards",
+    query: "GitHub speech recognition TTS model card benchmark results Whisper Canary Parakeet 2025 2026",
+    prompt: `Search GitHub for model cards and README files of popular speech models: openai/whisper, nvidia/canary, nvidia/parakeet, facebook/seamless, microsoft/speecht5, coqui-ai/TTS.
+
+Extract any benchmark metrics reported in the model cards (WER, CER, MOS, RTF, latency, etc.).
+
+Return ONLY a JSON array (no markdown, no explanation) matching this schema:
+[{
+  "vendor_slug": string,
+  "model_name": string,
+  "benchmark_type": string,       // "STT", "TTS", or "V2V"
+  "source_name": "GitHub Model Card",
+  "source_url": string,           // GitHub repo URL
+  "metric_name": string,
+  "metric_value": number,
+  "metric_unit": string,
+  "dataset": string,
+  "language": "en"
+}]`,
+  },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
