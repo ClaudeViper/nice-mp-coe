@@ -13,6 +13,8 @@ import {
   Loader2,
   BarChart3,
   Info,
+  Download,
+  Share2,
 } from "lucide-react";
 import {
   findMetric,
@@ -215,6 +217,62 @@ export default function EvaluationDetailPage() {
               <span>Completed: {new Date(evaluation.completedAt).toLocaleString()}</span>
             )}
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const data = {
+                vendor: evaluation.vendor.name,
+                model: evaluation.modelName,
+                type: evaluation.evaluationType,
+                status: evaluation.status,
+                dataset: evaluation.dataset,
+                language: evaluation.language,
+                metrics: aggregateResults.map((r) => ({
+                  name: r.metricName,
+                  value: r.metricValue,
+                  unit: r.metricUnit,
+                })),
+                samples: sampleResults.map((r) => ({
+                  sampleId: r.sampleId,
+                  metric: r.metricName,
+                  value: r.metricValue,
+                  unit: r.metricUnit,
+                  details: r.details,
+                })),
+              };
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `eval-${evaluation.vendor.name}-${evaluation.modelName}-${evaluation.evaluationType}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export JSON
+          </button>
+          <button
+            onClick={() => {
+              const lines = ["Metric,Value,Unit"];
+              for (const r of aggregateResults) {
+                lines.push(`${r.metricName},${r.metricValue},${r.metricUnit}`);
+              }
+              const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `eval-${evaluation.vendor.name}-${evaluation.modelName}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </button>
         </div>
       </div>
 
