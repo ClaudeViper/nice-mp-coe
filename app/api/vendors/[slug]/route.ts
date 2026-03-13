@@ -21,6 +21,16 @@ export async function GET(
           take: 50,
           include: { vendor: { select: { name: true, slug: true } } },
         },
+        evaluations: {
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: {
+            results: {
+              where: { sampleId: null },
+              orderBy: { metricName: "asc" },
+            },
+          },
+        },
       },
     });
 
