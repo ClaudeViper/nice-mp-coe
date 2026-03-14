@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Building2,
   Shield,
@@ -245,6 +245,7 @@ function TabGroup({
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function VendorsPage() {
+  const router = useRouter();
   const [vendors,      setVendors]      = useState<VendorSummary[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState<string | null>(null);
@@ -619,11 +620,18 @@ export default function VendorsPage() {
             const aa          = getAA(vendor.slug);
 
             return (
-              <Link
+              <div
                 key={vendor.id}
-                href={`/vendors/${vendor.slug}`}
-                className="group glass-card ai-glow rounded-xl p-5 transition-all hover:shadow-lg block"
-                style={{ textDecoration: "none" }}
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/vendors/${vendor.slug}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/vendors/${vendor.slug}`);
+                  }
+                }}
+                className="group glass-card ai-glow rounded-xl p-5 transition-all hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 aria-label={`${vendor.name} vendor profile — ${categories.join(", ")}`}
               >
                 {/* Card header: logo + name */}
@@ -728,7 +736,7 @@ export default function VendorsPage() {
                     <ScoreBadge score={vendor.niceCompatibility.buildVsBuyScore} />
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>

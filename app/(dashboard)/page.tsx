@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -19,6 +19,12 @@ import {
   CheckCircle2,
   Clock,
   Globe,
+  Bot,
+  Play,
+  Search,
+  DollarSign,
+  BookOpen,
+  Headphones,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +95,217 @@ const QUICK_LINKS = [
     badge: "Agentic",
   },
 ];
+
+// ─── AI Agents ────────────────────────────────────────────────────────────────
+
+interface AgentDef {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  categoryColor: string;
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
+}
+
+const AGENTS: AgentDef[] = [
+  {
+    id: "vendor-scout",
+    name: "Vendor Scout",
+    description: "Crawls the web for new STT/TTS/V2V vendors, enriches profiles, and updates the registry.",
+    category: "Discovery",
+    categoryColor: "#00d4e8",
+    icon: Search,
+    iconColor: "#00d4e8",
+    iconBg: "rgba(0,212,232,0.1)",
+  },
+  {
+    id: "benchmark-runner",
+    name: "Benchmark Runner",
+    description: "Runs standardized accuracy, latency, and cost benchmarks across all registered vendors.",
+    category: "Evaluation",
+    categoryColor: "#7c3aed",
+    icon: BarChart3,
+    iconColor: "#a855f7",
+    iconBg: "rgba(124,58,237,0.1)",
+  },
+  {
+    id: "news-digest",
+    name: "News Digest",
+    description: "Scans industry sources for announcements, model releases, and market intelligence.",
+    category: "Intelligence",
+    categoryColor: "#10b981",
+    icon: Newspaper,
+    iconColor: "#10b981",
+    iconBg: "rgba(16,185,129,0.1)",
+  },
+  {
+    id: "audio-lab",
+    name: "Audio Lab",
+    description: "Synthesises test utterances, runs listening tests, and computes MOS/MUSHRA scores.",
+    category: "Quality",
+    categoryColor: "#f59e0b",
+    icon: Headphones,
+    iconColor: "#f59e0b",
+    iconBg: "rgba(245,158,11,0.1)",
+  },
+  {
+    id: "standards-publisher",
+    name: "Standards Publisher",
+    description: "Generates compliance reports aligned with NICE CXone integration standards.",
+    category: "Compliance",
+    categoryColor: "#ec4899",
+    icon: BookOpen,
+    iconColor: "#ec4899",
+    iconBg: "rgba(236,72,153,0.1)",
+  },
+  {
+    id: "cost-optimizer",
+    name: "Cost Optimizer",
+    description: "Analyses pricing tiers, volume discounts, and recommends the lowest-cost vendor mix.",
+    category: "Finance",
+    categoryColor: "#06b6d4",
+    icon: DollarSign,
+    iconColor: "#06b6d4",
+    iconBg: "rgba(6,182,212,0.1)",
+  },
+];
+
+type AgentStatus = "idle" | "running" | "completed" | "failed";
+
+interface AgentState {
+  status: AgentStatus;
+  jobId?: string;
+  lastRun?: string;
+  toastMsg?: string;
+}
+
+function AgentCard({ agent }: { agent: AgentDef }) {
+  const [state, setState] = useState<AgentState>({ status: "idle" });
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stopPolling(), [stopPolling]);
+
+  async function runAgent() {
+    if (state.status === "running") return;
+    setState({ status: "running" });
+
+    try {
+      const res = await fetch(`/api/agents/${agent.id}/run`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { jobId } = await res.json() as { jobId: string };
+
+      pollRef.current = setInterval(async () => {
+        try {
+          const sr = await fetch(`/api/agents/${agent.id}/status?jobId=${encodeURIComponent(jobId)}`);
+          if (!sr.ok) return;
+          const data = await sr.json() as { status: string; completedAt?: string };
+          if (data.status === "completed") {
+            stopPolling();
+            setState({ status: "completed", jobId, lastRun: data.completedAt ?? new Date().toISOString(), toastMsg: "Completed successfully" });
+          } else if (data.status === "failed") {
+            stopPolling();
+            setState({ status: "failed", jobId, lastRun: new Date().toISOString(), toastMsg: "Agent failed" });
+          }
+        } catch { /* keep polling */ }
+      }, 3000);
+    } catch (e) {
+      setState({ status: "failed", toastMsg: String(e) });
+    }
+  }
+
+  const statusStyle: Record<AgentStatus, React.CSSProperties> = {
+    idle:      { background: "rgba(100,116,139,0.1)", color: "#94a3b8", border: "1px solid rgba(100,116,139,0.2)" },
+    running:   { background: "rgba(0,212,232,0.12)",  color: "#00d4e8", border: "1px solid rgba(0,212,232,0.3)" },
+    completed: { background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)" },
+    failed:    { background: "rgba(239,68,68,0.1)",   color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" },
+  };
+
+  return (
+    <Card className="border-0 glass-card ai-glow flex flex-col">
+      <CardContent className="p-5 flex flex-col gap-3 flex-1">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: agent.iconBg }}>
+            <agent.icon className="h-5 w-5" style={{ color: agent.iconColor }} aria-hidden="true" />
+          </div>
+          <span
+            className="rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ background: `${agent.categoryColor}18`, color: agent.categoryColor, border: `1px solid ${agent.categoryColor}30` }}
+          >
+            {agent.category}
+          </span>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1">
+          <p className="font-semibold text-sm mb-1" style={{ color: "var(--foreground)" }}>{agent.name}</p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--muted-foreground)" }}>{agent.description}</p>
+        </div>
+
+        {/* Status row */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={statusStyle[state.status]}
+            role="status"
+            aria-label={`Agent status: ${state.status}`}
+          >
+            {state.status === "running" && <Activity className="h-3 w-3 animate-pulse" aria-hidden="true" />}
+            {state.status === "completed" && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}
+            {state.status.charAt(0).toUpperCase() + state.status.slice(1)}
+          </span>
+          {state.lastRun && (
+            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+              Last run: {new Date(state.lastRun).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
+
+        {/* Toast message */}
+        {state.toastMsg && state.status !== "running" && (
+          <p className="text-xs" style={{ color: state.status === "completed" ? "#10b981" : "#ef4444" }}>
+            {state.toastMsg}
+          </p>
+        )}
+
+        {/* Run button */}
+        <button
+          onClick={runAgent}
+          disabled={state.status === "running"}
+          aria-label={state.status === "running" ? `${agent.name} is running` : `Run ${agent.name}`}
+          aria-busy={state.status === "running"}
+          className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: state.status === "running" ? "rgba(0,212,232,0.08)" : "linear-gradient(135deg,rgba(0,212,232,0.15),rgba(124,58,237,0.15))",
+            border: "1px solid rgba(0,212,232,0.25)",
+            color: "#00d4e8",
+          }}
+        >
+          {state.status === "running" ? (
+            <>
+              <Activity className="h-3.5 w-3.5 animate-pulse" aria-hidden="true" />
+              Running…
+            </>
+          ) : (
+            <>
+              <Play className="h-3.5 w-3.5" aria-hidden="true" />
+              Run Now
+            </>
+          )}
+        </button>
+      </CardContent>
+    </Card>
+  );
+}
 
 function StatCard({ label, value, icon: Icon, color, delta }: { label: string; value: number | string; icon: React.ElementType; color: string; delta?: string }) {
   return (
@@ -235,6 +452,27 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── AI Agents ──────────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Bot className="h-4 w-4" style={{ color: "#00d4e8" }} />
+          <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>
+            AI Agents
+          </h2>
+          <span
+            className="ml-1 rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ background: "rgba(0,212,232,0.1)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.2)" }}
+          >
+            {AGENTS.length} available
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {AGENTS.map((agent) => (
+            <AgentCard key={agent.id} agent={agent} />
           ))}
         </div>
       </div>

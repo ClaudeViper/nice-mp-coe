@@ -22,7 +22,7 @@ const LOGO_MAP: Record<string, LogoEntry> = {
   },
   // Google
   google: {
-    url: "https://developers.google.com/static/site-assets/logo-google-developers.svg",
+    url: "https://logo.clearbit.com/google.com",
     bg: "#ffffff",
     pad: 5,
   },
@@ -119,6 +119,41 @@ const LOGO_MAP: Record<string, LogoEntry> = {
     bg: "#000000",
     pad: 7,
   },
+  // Coqui
+  coqui: {
+    url: "https://logo.clearbit.com/coqui.ai",
+    bg: "#1a1a1a",
+    pad: 6,
+  },
+  // Meta
+  meta: {
+    url: "https://logo.clearbit.com/meta.com",
+    bg: "#ffffff",
+    pad: 5,
+  },
+  // NVIDIA
+  nvidia: {
+    url: "https://logo.clearbit.com/nvidia.com",
+    bg: "#000000",
+    pad: 5,
+  },
+  // VAPI
+  vapi: {
+    url: "https://logo.clearbit.com/vapi.ai",
+    bg: "#0f0f1a",
+    pad: 6,
+  },
+  // Retell AI
+  retell: {
+    url: "https://logo.clearbit.com/retellai.com",
+    bg: "#0f172a",
+    pad: 6,
+  },
+  retellai: {
+    url: "https://logo.clearbit.com/retellai.com",
+    bg: "#0f172a",
+    pad: 6,
+  },
 };
 
 /** Brand accent colors used in the fallback letter-avatar */
@@ -141,6 +176,12 @@ const BRAND_COLORS: Record<string, string> = {
   hume:         "#4f46e5",
   tavus:        "#0f172a",
   runway:       "#333333",
+  coqui:        "#FBBF24",
+  meta:         "#0082FB",
+  nvidia:       "#76B900",
+  vapi:         "#7C3AED",
+  retell:       "#EC4899",
+  retellai:     "#EC4899",
 };
 
 function resolveEntry(slug: string): LogoEntry | undefined {
