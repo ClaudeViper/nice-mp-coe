@@ -231,8 +231,8 @@ function WaveformCanvas({ audioUrl }: { audioUrl: string | null }) {
       ref={canvasRef}
       width={640}
       height={120}
-      className="w-full rounded-lg"
-      style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}
+      className="block w-full rounded-lg"
+      style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)", height: "120px" }}
     />
   );
 }
@@ -465,7 +465,7 @@ function AudioGeneratorSection() {
         </CardHeader>
         <CardContent className="px-5 pb-5 space-y-4">
           {/* Waveform */}
-          <div style={{ height: 120 }}>
+          <div style={{ height: 120, overflow: "hidden" }}>
             <WaveformCanvas audioUrl={audioUrl} />
           </div>
 
