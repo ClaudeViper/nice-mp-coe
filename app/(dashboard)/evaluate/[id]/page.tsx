@@ -743,10 +743,20 @@ export default function EvaluationDetailPage() {
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/evaluations/${id}`);
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status === 404) throw new Error("Evaluation not found.");
+        if (res.status >= 500) throw new Error("The evaluation service is temporarily unavailable. Please try again in a moment.");
+        try {
+          const json = JSON.parse(text);
+          throw new Error(json?.error?.message ?? json?.message ?? "Something went wrong.");
+        } catch {
+          throw new Error("Something went wrong. Please try again.");
+        }
+      }
       setEvaluation(await res.json());
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -772,13 +782,25 @@ export default function EvaluationDetailPage() {
 
   if (error || !evaluation) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Link href="/evaluate" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: "#00d4e8" }}>
           <ArrowLeft className="h-4 w-4" /> Back to Evaluations
         </Link>
-        <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
-          <AlertCircle className="h-4 w-4 flex-shrink-0" style={{ color: "#ef4444" }} />
-          <span style={{ color: "#ef4444" }}>{error ?? "Evaluation not found"}</span>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl py-16 text-center" style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)" }}>
+          <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "rgba(239,68,68,0.1)" }}>
+            <XCircle className="h-7 w-7" style={{ color: "#ef4444" }} />
+          </div>
+          <div>
+            <p className="text-base font-semibold" style={{ color: "var(--foreground)" }}>Unable to load evaluation</p>
+            <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>{error ?? "Evaluation not found"}</p>
+          </div>
+          <button
+            onClick={() => { setError(null); setLoading(true); load(); }}
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all hover:opacity-80"
+            style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)" }}
+          >
+            <RefreshCw className="h-4 w-4" /> Try again
+          </button>
         </div>
       </div>
     );
@@ -878,10 +900,17 @@ export default function EvaluationDetailPage() {
       )}
 
       {/* Error message */}
-      {evaluation.errorMessage && (
-        <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
-          <AlertCircle className="h-4 w-4 flex-shrink-0" style={{ color: "#ef4444" }} />
-          <span style={{ color: "#ef4444" }}>{evaluation.errorMessage}</span>
+      {evaluation.status === "Failed" && (
+        <div className="flex items-start gap-3 rounded-xl px-4 py-4" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+          <XCircle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: "#ef4444" }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#ef4444" }}>Evaluation did not complete</p>
+            <p className="mt-0.5 text-sm" style={{ color: "var(--muted-foreground)" }}>
+              {evaluation.errorMessage
+                ? "An error occurred during processing. The results below (if any) are partial."
+                : "This evaluation was unable to produce results. Please try running it again."}
+            </p>
+          </div>
         </div>
       )}
 
