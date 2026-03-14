@@ -11,6 +11,7 @@ import {
   evaluateMetric,
   type MetricDefinition,
 } from "@/lib/metrics";
+import { VendorLogo } from "@/components/vendor-logo";
 
 interface BenchmarkResult {
   id: string;
@@ -310,8 +311,8 @@ export function BenchmarkTable({
       {/* ── Table ───────────────────────────────────────────────────── */}
       {loading ? (
         <Card className="glass-card border-0">
-          <CardContent className="flex items-center justify-center py-20">
-            <RefreshCw className="h-5 w-5 animate-spin mr-2" style={{ color: colors.accent }} />
+          <CardContent role="status" aria-label="Loading benchmarks" className="flex items-center justify-center py-20">
+            <RefreshCw className="h-5 w-5 animate-spin mr-2" style={{ color: colors.accent }} aria-hidden="true" />
             <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>Loading benchmarks...</span>
           </CardContent>
         </Card>
@@ -366,9 +367,7 @@ export function BenchmarkTable({
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white flex-shrink-0" style={{ background: `linear-gradient(135deg,${colors.accent},#7c3aed)` }}>
-                            {r.vendor.name.charAt(0)}
-                          </div>
+                          <VendorLogo name={r.vendor.name} slug={r.vendor.slug} size={28} />
                           <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{r.vendor.name}</span>
                         </div>
                       </td>
@@ -391,7 +390,14 @@ export function BenchmarkTable({
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: "var(--muted-foreground)" }}>{r.dataset}</td>
                       <td className="px-4 py-3 text-sm">
-                        <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline" style={{ color: colors.accent }}>
+                        <a
+                          href={r.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium hover:underline"
+                          style={{ color: colors.accent }}
+                          aria-label={`${r.sourceName} benchmark source (opens in new tab)`}
+                        >
                           {r.sourceName}
                         </a>
                       </td>

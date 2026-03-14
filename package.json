@@ -16,6 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:a11y": "playwright test e2e/accessibility.spec.ts",
+    "fetch-benchmarks": "node scripts/fetch_benchmarks.js",
+    "fetch-benchmarks:force": "node scripts/fetch_benchmarks.js --force",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

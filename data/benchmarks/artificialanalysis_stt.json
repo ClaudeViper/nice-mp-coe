@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "source": "artificialanalysis.ai/speech-to-text",
+    "source_url": "https://artificialanalysis.ai/speech-to-text",
+    "last_updated": "2026-03-14",
+    "note": "Representative data based on publicly available benchmarks. Run `npm run fetch-benchmarks` to refresh."
+  },
+  "models": [
+    {
+      "vendor_slug": "openai",
+      "vendor_name": "OpenAI",
+      "model_name": "Whisper large-v3",
+      "aa_quality_score": 82,
+      "aa_speed_score": 78,
+      "aa_price_per_hour": 0.36,
+      "aa_latency_ms": 420,
+      "aa_wer_english": 2.7,
+      "aa_rank": 3,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "google",
+      "vendor_name": "Google",
+      "model_name": "Chirp 2",
+      "aa_quality_score": 85,
+      "aa_speed_score": 91,
+      "aa_price_per_hour": 1.44,
+      "aa_latency_ms": 310,
+      "aa_wer_english": 2.1,
+      "aa_rank": 2,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "aws",
+      "vendor_name": "Amazon",
+      "model_name": "Transcribe",
+      "aa_quality_score": 74,
+      "aa_speed_score": 88,
+      "aa_price_per_hour": 1.44,
+      "aa_latency_ms": 380,
+      "aa_wer_english": 4.8,
+      "aa_rank": 6,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "microsoft",
+      "vendor_name": "Microsoft",
+      "model_name": "Azure Speech",
+      "aa_quality_score": 79,
+      "aa_speed_score": 85,
+      "aa_price_per_hour": 1.00,
+      "aa_latency_ms": 350,
+      "aa_wer_english": 3.5,
+      "aa_rank": 4,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "assemblyai",
+      "vendor_name": "AssemblyAI",
+      "model_name": "Universal-2",
+      "aa_quality_score": 88,
+      "aa_speed_score": 93,
+      "aa_price_per_hour": 0.65,
+      "aa_latency_ms": 280,
+      "aa_wer_english": 2.6,
+      "aa_rank": 1,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "deepgram",
+      "vendor_name": "Deepgram",
+      "model_name": "Nova-2",
+      "aa_quality_score": 83,
+      "aa_speed_score": 96,
+      "aa_price_per_hour": 0.54,
+      "aa_latency_ms": 240,
+      "aa_wer_english": 3.1,
+      "aa_rank": 4,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    },
+    {
+      "vendor_slug": "speechmatics",
+      "vendor_name": "Speechmatics",
+      "model_name": "Enhanced",
+      "aa_quality_score": 77,
+      "aa_speed_score": 80,
+      "aa_price_per_hour": 1.20,
+      "aa_latency_ms": 400,
+      "aa_wer_english": 3.8,
+      "aa_rank": 5,
+      "aa_source_url": "https://artificialanalysis.ai/speech-to-text"
+    }
+  ]
+}

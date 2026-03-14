@@ -158,3 +158,100 @@ body {
   .print\:hidden { display: none !important; }
   body { background: white; color: black; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Skip navigation link ────────────────────────────────────────────────── */
+.skip-nav:focus {
+  display: block;
+  position: fixed !important;
+  left: 1rem !important;
+  top: 1rem !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background: #00d4e8;
+  color: #060f2e;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ── Global focus ring ────────────────────────────────────────────────────
+   Replaces browser default outline with a clearly visible NICE-cyan ring.
+   Only shown for keyboard navigation (not mouse clicks) via :focus-visible.
+   ────────────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #00d4e8 !important;
+  outline-offset: 2px !important;
+}
+/* Remove outline for mouse/touch interactions */
+:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* ── Minimum touch target size (44 × 44 px) ──────────────────────────────
+   Wraps small interactive elements to ensure mobile accessibility.          */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin    { animation: none !important; }
+  .animate-pulse   { animation: none !important; }
+  .animate-bounce  { animation: none !important; }
+  .gradient-border::before { animation: none !important; }
+}
+
+/* ── High-contrast mode ──────────────────────────────────────────────────── */
+[data-high-contrast="true"] {
+  --foreground:        #ffffff;
+  --background:        #000000;
+  --card:              #111111;
+  --card-foreground:   #ffffff;
+  --muted-foreground:  #cccccc;
+  --border:            #ffffff;
+  --nice-cyan-500:     #00ffff;
+  --ring:              #00ffff;
+}
+[data-high-contrast="true"] body {
+  background: #000000;
+  color: #ffffff;
+}
+[data-high-contrast="true"] .glass-card {
+  background: #111111;
+  border-color: #ffffff;
+}
+
+/* ── ARIA live region helper ──────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+

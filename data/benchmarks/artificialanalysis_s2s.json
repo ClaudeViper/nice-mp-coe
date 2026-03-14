@@ -1,0 +1,54 @@
+{
+  "_meta": {
+    "source": "artificialanalysis.ai/models/speech-to-speech",
+    "source_url": "https://artificialanalysis.ai/models/speech-to-speech",
+    "last_updated": "2026-03-14",
+    "note": "Representative data based on publicly available benchmarks. Run `npm run fetch-benchmarks` to refresh."
+  },
+  "models": [
+    {
+      "vendor_slug": "hume",
+      "vendor_name": "Hume AI",
+      "model_name": "EVI 2",
+      "aa_quality_score": 84,
+      "aa_speed_score": 79,
+      "aa_price_per_hour": 12.00,
+      "aa_latency_ms": 680,
+      "aa_rank": 2,
+      "aa_source_url": "https://artificialanalysis.ai/models/speech-to-speech"
+    },
+    {
+      "vendor_slug": "openai",
+      "vendor_name": "OpenAI",
+      "model_name": "GPT-4o Realtime",
+      "aa_quality_score": 88,
+      "aa_speed_score": 91,
+      "aa_price_per_hour": 21.60,
+      "aa_latency_ms": 320,
+      "aa_rank": 1,
+      "aa_source_url": "https://artificialanalysis.ai/models/speech-to-speech"
+    },
+    {
+      "vendor_slug": "tavus",
+      "vendor_name": "Tavus",
+      "model_name": "Conversational Video",
+      "aa_quality_score": 76,
+      "aa_speed_score": 68,
+      "aa_price_per_hour": 30.00,
+      "aa_latency_ms": 1100,
+      "aa_rank": 4,
+      "aa_source_url": "https://artificialanalysis.ai/models/speech-to-speech"
+    },
+    {
+      "vendor_slug": "runway",
+      "vendor_name": "Runway",
+      "model_name": "Gen-3 Audio",
+      "aa_quality_score": 79,
+      "aa_speed_score": 72,
+      "aa_price_per_hour": 18.00,
+      "aa_latency_ms": 950,
+      "aa_rank": 3,
+      "aa_source_url": "https://artificialanalysis.ai/models/speech-to-speech"
+    }
+  ]
+}
