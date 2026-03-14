@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Zap,
   Database,
+  AudioWaveform as Waveform,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ const navigation = [
     ],
   },
   { name: "News Intelligence", href: "/news", icon: Newspaper },
+  { name: "TTS Audio Lab", href: "/tts-audio-lab", icon: Waveform },
   { name: "Evaluate", href: "/evaluate", icon: FlaskConical },
   { name: "Datasets", href: "/datasets", icon: Database },
   { name: "Standards", href: "/standards", icon: BookCheck },

@@ -13,6 +13,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/evaluate": "Evaluations",
   "/standards": "Standards",
   "/reports": "Reports",
+  "/tts-audio-lab": "TTS Audio Lab",
 };
 
 function getLabel(pathname: string): string {
