@@ -16,6 +16,7 @@ import {
   Sparkles,
   ChevronRight,
   Zap,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ const navigation = [
   },
   { name: "News Intelligence", href: "/news", icon: Newspaper },
   { name: "Evaluate", href: "/evaluate", icon: FlaskConical },
+  { name: "Datasets", href: "/datasets", icon: Database },
   { name: "Standards", href: "/standards", icon: BookCheck },
   { name: "Reports", href: "/reports", icon: FileText },
 ];

@@ -32,7 +32,7 @@ export interface EvaluationRunResult {
 
 // ─── Built-in Test Datasets (Spec §8.2) ──────────────────────────────────────
 
-interface STTSample {
+export interface STTSample {
   id: string;
   audioDescription: string;
   groundTruth: string;
@@ -41,7 +41,7 @@ interface STTSample {
   useCase: string;
 }
 
-interface TTSSample {
+export interface TTSSample {
   id: string;
   text: string;
   expectedDuration: number;
@@ -49,7 +49,7 @@ interface TTSSample {
   useCase: string;
 }
 
-interface V2VSample {
+export interface V2VSample {
   id: string;
   scenario: string;
   expectedBehavior: string;
@@ -60,7 +60,7 @@ interface V2VSample {
 
 // ── STT Dataset: NICE-CX-Clean-EN ─────────────────────────────────────────────
 // 50 clean-audio contact-center clips, Agent Assist use case
-const NICE_CX_CLEAN_EN: STTSample[] = [
+export const NICE_CX_CLEAN_EN: STTSample[] = [
   { id: "clean-001", audioDescription: "Clear male voice, office environment", groundTruth: "The quarterly earnings report shows a significant increase in revenue compared to last year.", duration: 4.2, difficulty: "easy", useCase: "agent_assist" },
   { id: "clean-002", audioDescription: "Clear female voice, quiet room", groundTruth: "I would like to update my account information and change my billing address to the new location.", duration: 4.5, difficulty: "easy", useCase: "agent_assist" },
   { id: "clean-003", audioDescription: "Native speaker, standard accent", groundTruth: "Can you please transfer me to the technical support department? I'm having issues with my device.", duration: 4.1, difficulty: "easy", useCase: "agent_assist" },
@@ -115,7 +115,7 @@ const NICE_CX_CLEAN_EN: STTSample[] = [
 
 // ── STT Dataset: NICE-CX-Noisy-EN ─────────────────────────────────────────────
 // 50 noisy/IVR audio clips, challenging conditions
-const NICE_CX_NOISY_EN: STTSample[] = [
+export const NICE_CX_NOISY_EN: STTSample[] = [
   { id: "noisy-001", audioDescription: "Background call center noise, multiple agents", groundTruth: "I need to check the balance on my account please.", duration: 3.2, difficulty: "medium", useCase: "ivr" },
   { id: "noisy-002", audioDescription: "Phone quality audio with static", groundTruth: "What are your business hours on weekends?", duration: 2.8, difficulty: "medium", useCase: "ivr" },
   { id: "noisy-003", audioDescription: "Mobile call, street noise background", groundTruth: "I want to pay my bill using a credit card right now.", duration: 3.5, difficulty: "hard", useCase: "ivr" },
@@ -170,7 +170,7 @@ const NICE_CX_NOISY_EN: STTSample[] = [
 
 // ── TTS Dataset: NICE-TTS-IVR-EN ──────────────────────────────────────────────
 // 30 IVR prompts
-const NICE_TTS_IVR_EN: TTSSample[] = [
+export const NICE_TTS_IVR_EN: TTSSample[] = [
   { id: "ivr-001", text: "Welcome to NICE customer service. Please say or press one for account information, two for billing, three for technical support, or four for all other inquiries.", expectedDuration: 7.0, category: "main_menu", useCase: "ivr" },
   { id: "ivr-002", text: "I'm sorry, I didn't understand that. Please try again.", expectedDuration: 2.8, category: "error", useCase: "ivr" },
   { id: "ivr-003", text: "Please hold while I transfer your call. Your estimated wait time is approximately five minutes.", expectedDuration: 4.2, category: "hold", useCase: "ivr" },
@@ -205,7 +205,7 @@ const NICE_TTS_IVR_EN: TTSSample[] = [
 
 // ── TTS Dataset: NICE-TTS-Agent-EN ────────────────────────────────────────────
 // 30 Agent Response prompts
-const NICE_TTS_AGENT_EN: TTSSample[] = [
+export const NICE_TTS_AGENT_EN: TTSSample[] = [
   { id: "agent-001", text: "Thank you for calling NICE support. My name is Alex and I'll be assisting you today. Could I get your account number to pull up your file?", expectedDuration: 6.0, category: "greeting", useCase: "agent_response" },
   { id: "agent-002", text: "I completely understand your frustration and I sincerely apologize for the inconvenience this has caused you.", expectedDuration: 4.5, category: "empathy", useCase: "agent_response" },
   { id: "agent-003", text: "I can see here that the charge of two hundred and fifteen dollars was applied on the third of this month. Let me investigate that further for you.", expectedDuration: 5.5, category: "account_review", useCase: "agent_response" },
@@ -240,7 +240,7 @@ const NICE_TTS_AGENT_EN: TTSSample[] = [
 
 // ── V2V Dataset: NICE-V2V-Support-EN ──────────────────────────────────────────
 // 10 Customer Support conversation scripts
-const NICE_V2V_SUPPORT_EN: V2VSample[] = [
+export const NICE_V2V_SUPPORT_EN: V2VSample[] = [
   { id: "support-001", scenario: "Customer calls to report a billing discrepancy. They were charged twice for the same subscription in March. Account shows duplicate transaction on March 15th.", expectedBehavior: "Verify identity, confirm duplicate charge, process refund, send confirmation email, document case", turns: 6, category: "billing_dispute", useCase: "customer_support" },
   { id: "support-002", scenario: "Customer's internet service has been down for 12 hours. They work from home and are losing productivity. Outage is known and being resolved.", expectedBehavior: "Acknowledge urgency, verify outage status, provide ETA, offer bill credit, escalate if needed", turns: 7, category: "technical_support", useCase: "customer_support" },
   { id: "support-003", scenario: "Customer wants to cancel service after 8 years due to competitor offer. Retention budget allows up to 30% discount for 6 months.", expectedBehavior: "Express appreciation, understand reason, match/beat competitor offer, document outcome", turns: 8, category: "retention", useCase: "customer_support" },
@@ -255,7 +255,7 @@ const NICE_V2V_SUPPORT_EN: V2VSample[] = [
 
 // ── V2V Dataset: NICE-V2V-IVR-EN ──────────────────────────────────────────────
 // 10 Conversational IVR scripts
-const NICE_V2V_IVR_EN: V2VSample[] = [
+export const NICE_V2V_IVR_EN: V2VSample[] = [
   { id: "ivr-s-001", scenario: "Customer calls IVR to check account balance. They respond 'account balance' to the main menu. System must authenticate and read balance.", expectedBehavior: "Recognize intent, authenticate via DOB, read balance clearly, offer additional options", turns: 4, category: "balance_check", useCase: "conversational_ivr" },
   { id: "ivr-s-002", scenario: "Customer navigates IVR to make a payment but gives an ambiguous response 'I want to pay' without specifying amount or method.", expectedBehavior: "Understand intent, disambiguate amount, accept payment method, confirm payment, send receipt", turns: 6, category: "payment", useCase: "conversational_ivr" },
   { id: "ivr-s-003", scenario: "Customer asks to speak to a 'real person' multiple times after each IVR prompt. System should gracefully handle opt-out requests.", expectedBehavior: "Detect escalation intent, acknowledge, offer estimated wait time, queue for agent", turns: 3, category: "agent_request", useCase: "conversational_ivr" },
@@ -634,9 +634,22 @@ export async function runEvaluation(request: EvaluationRequest): Promise<Evaluat
 
   const datasetId = request.dataset ?? defaultDatasetId;
 
-  const sttSamples = STT_DATASETS[datasetId] ?? STT_DATASETS["NICE-CX-Clean-EN"] ?? NICE_CX_CLEAN_EN;
-  const ttsSamples = TTS_DATASETS[datasetId] ?? TTS_DATASETS["NICE-TTS-IVR-EN"] ?? NICE_TTS_IVR_EN;
-  const v2vSamples = V2V_DATASETS[datasetId] ?? V2V_DATASETS["NICE-V2V-Support-EN"] ?? NICE_V2V_SUPPORT_EN;
+  // Try DB-managed dataset first (allows editing via Datasets page)
+  const dbDataset = await prisma.evaluationDataset.findFirst({
+    where: { OR: [{ slug: datasetId }, { name: datasetId }] },
+  });
+
+  const sttSamples: STTSample[] = dbDataset && request.evaluationType === "STT" && Array.isArray(dbDataset.samples) && (dbDataset.samples as STTSample[]).length > 0
+    ? (dbDataset.samples as STTSample[])
+    : (STT_DATASETS[datasetId] ?? STT_DATASETS["NICE-CX-Clean-EN"] ?? NICE_CX_CLEAN_EN);
+
+  const ttsSamples: TTSSample[] = dbDataset && request.evaluationType === "TTS" && Array.isArray(dbDataset.samples) && (dbDataset.samples as TTSSample[]).length > 0
+    ? (dbDataset.samples as TTSSample[])
+    : (TTS_DATASETS[datasetId] ?? TTS_DATASETS["NICE-TTS-IVR-EN"] ?? NICE_TTS_IVR_EN);
+
+  const v2vSamples: V2VSample[] = dbDataset && request.evaluationType === "V2V" && Array.isArray(dbDataset.samples) && (dbDataset.samples as V2VSample[]).length > 0
+    ? (dbDataset.samples as V2VSample[])
+    : (V2V_DATASETS[datasetId] ?? V2V_DATASETS["NICE-V2V-Support-EN"] ?? NICE_V2V_SUPPORT_EN);
 
   const totalSamples =
     request.evaluationType === "STT"
