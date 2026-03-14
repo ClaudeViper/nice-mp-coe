@@ -48,7 +48,9 @@ export async function POST(request: Request) {
 
       const proc = spawn("python3", [scriptPath, "--config", tmpConfigPath]);
       let processDone = false;
-      let exitCode: number | null = null;
+      let stderrBuf = "";
+
+      proc.stderr.on("data", (d: Buffer) => { stderrBuf += d.toString(); });
 
       const pollInterval = setInterval(() => {
         if (processDone) return;
@@ -64,20 +66,47 @@ export async function POST(request: Request) {
 
       proc.on("close", (code) => {
         processDone = true;
-        exitCode = code;
         clearInterval(pollInterval);
 
         // Clean up temp config
         try { fs.unlinkSync(tmpConfigPath); } catch {}
 
         const manifestPath = path.join(resolvedOutputDir, "manifest.csv");
+
+        // Count actually-created audio files
+        let createdCount = 0;
+        try {
+          createdCount = fs
+            .readdirSync(resolvedOutputDir)
+            .filter((f) => f.endsWith(".wav") || f.endsWith(".mp3"))
+            .length;
+        } catch {}
+
+        const success = code === 0 && createdCount > 0;
+
+        // Build a helpful error message if something went wrong
+        let errorMsg: string | undefined;
+        if (!success) {
+          if (code !== 0) {
+            // Extract last meaningful line from stderr
+            const stderrLines = stderrBuf.trim().split("\n").filter(Boolean);
+            const lastLine = stderrLines.findLast((l) => !l.startsWith("[")) ?? stderrLines[stderrLines.length - 1];
+            errorMsg = lastLine
+              ? `Script exited with code ${code}: ${lastLine}`
+              : `Script exited with code ${code}. No TTS backend available (install kokoro or chatterbox-tts).`;
+          } else {
+            errorMsg = `Script succeeded but created ${createdCount} files (expected ${total}). Check output directory.`;
+          }
+        }
+
         send({
           type: "done",
-          success: code === 0,
-          completed: total,
+          success,
+          completed: createdCount,
           total,
-          manifest_path: code === 0 ? manifestPath : null,
+          manifest_path: success ? manifestPath : null,
           output_dir: resolvedOutputDir,
+          error: errorMsg,
         });
 
         controller.close();

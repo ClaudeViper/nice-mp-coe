@@ -3,11 +3,13 @@
 import { useState } from "react";
 
 // ─── Logo registry ────────────────────────────────────────────────────────────
-// Maps slug fragments → { url, bg color for the container, padding in px }
+// Maps slug fragments → { url, fallbackUrl, bg color for the container, padding in px }
 // Slugs are matched by checking if the vendor slug *contains* the key.
 
 interface LogoEntry {
   url: string;
+  /** Second URL tried if the primary fails (before letter-avatar fallback) */
+  fallbackUrl?: string;
   bg: string;
   /** Inset padding so the img doesn't touch the container edge (px) */
   pad: number;
@@ -20,9 +22,10 @@ const LOGO_MAP: Record<string, LogoEntry> = {
     bg: "#ffffff",
     pad: 6,
   },
-  // Google
+  // Google — use Google's own static asset, Clearbit as fallback
   google: {
-    url: "https://logo.clearbit.com/google.com",
+    url: "https://ssl.gstatic.com/images/branding/product/2x/googleg_standard_color_48dp.png",
+    fallbackUrl: "https://logo.clearbit.com/google.com",
     bg: "#ffffff",
     pad: 5,
   },
@@ -119,38 +122,43 @@ const LOGO_MAP: Record<string, LogoEntry> = {
     bg: "#000000",
     pad: 7,
   },
-  // Coqui
+  // Coqui (company is shut down; Clearbit won't have it — use letter avatar only)
   coqui: {
     url: "https://logo.clearbit.com/coqui.ai",
     bg: "#1a1a1a",
     pad: 6,
   },
-  // Meta
+  // Meta — use Meta's own static asset, Clearbit as fallback
   meta: {
-    url: "https://logo.clearbit.com/meta.com",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/800px-Meta_Platforms_Inc._logo.svg.png",
+    fallbackUrl: "https://logo.clearbit.com/meta.com",
     bg: "#ffffff",
-    pad: 5,
+    pad: 4,
   },
-  // NVIDIA
+  // NVIDIA — use SVG from Wikimedia, Clearbit as fallback
   nvidia: {
-    url: "https://logo.clearbit.com/nvidia.com",
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Nvidia_logo.svg/800px-Nvidia_logo.svg.png",
+    fallbackUrl: "https://logo.clearbit.com/nvidia.com",
     bg: "#000000",
     pad: 5,
   },
-  // VAPI
+  // VAPI — direct favicon from their site, Clearbit as fallback
   vapi: {
-    url: "https://logo.clearbit.com/vapi.ai",
+    url: "https://vapi.ai/favicon.ico",
+    fallbackUrl: "https://logo.clearbit.com/vapi.ai",
     bg: "#0f0f1a",
     pad: 6,
   },
-  // Retell AI
+  // Retell AI — direct favicon, Clearbit as fallback
   retell: {
-    url: "https://logo.clearbit.com/retellai.com",
+    url: "https://www.retellai.com/favicon.ico",
+    fallbackUrl: "https://logo.clearbit.com/retellai.com",
     bg: "#0f172a",
     pad: 6,
   },
   retellai: {
-    url: "https://logo.clearbit.com/retellai.com",
+    url: "https://www.retellai.com/favicon.ico",
+    fallbackUrl: "https://logo.clearbit.com/retellai.com",
     bg: "#0f172a",
     pad: 6,
   },
@@ -216,14 +224,25 @@ interface VendorLogoProps {
 
 /**
  * Renders the official vendor logo inside a consistently-sized rounded container.
- * Falls back to a colored letter-avatar if the image fails to load or no URL is known.
+ * Tries primary URL → fallbackUrl → colored letter-avatar.
  */
 export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogoProps) {
-  const [imgFailed, setImgFailed] = useState(false);
+  // 0 = try primary, 1 = try fallback, 2 = letter avatar
+  const [imgStage, setImgStage] = useState<0 | 1 | 2>(0);
 
-  const entry   = resolveEntry(slug.toLowerCase());
-  const bgColor = entry?.bg ?? resolveBrandColor(slug.toLowerCase());
-  const showImg = !!entry && !imgFailed;
+  const entry     = resolveEntry(slug.toLowerCase());
+  const bgColor   = entry?.bg ?? resolveBrandColor(slug.toLowerCase());
+  const showImg   = !!entry && imgStage < 2;
+
+  const handleError = () => {
+    if (imgStage === 0 && entry?.fallbackUrl) {
+      setImgStage(1); // try fallback URL
+    } else {
+      setImgStage(2); // show letter avatar
+    }
+  };
+
+  const imgSrc = imgStage === 1 ? entry?.fallbackUrl : entry?.url;
 
   const baseStyle: React.CSSProperties = {
     width:     size,
@@ -239,29 +258,30 @@ export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogo
     flexShrink: 0,
   };
 
-  if (showImg) {
-    const inner = size - (entry.pad ?? 0) * 2;
+  if (showImg && imgSrc) {
+    const inner = size - (entry!.pad ?? 0) * 2;
     return (
       <div style={baseStyle} className={className}>
         <img
-          src={entry.url}
+          src={imgSrc}
           alt={`${name} logo`}
           loading="lazy"
           width={inner}
           height={inner}
-          onError={() => setImgFailed(true)}
+          onError={handleError}
           style={{ width: inner, height: inner, objectFit: "contain" }}
         />
       </div>
     );
   }
 
-  // Fallback: letter avatar
+  // Final fallback: branded letter-avatar
+  const brandColor = resolveBrandColor(slug.toLowerCase());
   return (
     <div
       style={{
         ...baseStyle,
-        background: `linear-gradient(135deg, ${bgColor}, #7c3aed)`,
+        background: `linear-gradient(135deg, ${brandColor}, #7c3aed)`,
         color: "#ffffff",
         fontWeight: 700,
         fontSize: Math.round(size * 0.38),

@@ -1,9 +1,44 @@
 import { spawn } from "child_process";
+import fs from "fs";
+import os from "os";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 
 const DATASET_SLUG = "tts-lab-generated";
 const DATASET_NAME = "TTS Lab Generated";
+
+const MANIFEST_HEADER = "file_path,sentence_id,text,voice,speed,emotion,duration_seconds,sample_rate\n";
+
+function appendToManifest(result: Record<string, unknown>, text: string, voice: string, speed: number, emotion: number, sampleRate: number) {
+  try {
+    const manifestDir = path.join(os.homedir(), "audio_samples", "single");
+    fs.mkdirSync(manifestDir, { recursive: true });
+    const manifestPath = path.join(manifestDir, "manifest.csv");
+
+    // Sanitize text for CSV: replace commas with semicolons, remove newlines
+    const safeText = text.replace(/\r?\n/g, " ").replace(/"/g, "'");
+    const sentenceId = `single-${Date.now()}`;
+
+    const row = [
+      String(result.file_path ?? ""),
+      sentenceId,
+      `"${safeText}"`,
+      voice,
+      speed,
+      emotion,
+      String(result.duration_seconds ?? "0"),
+      sampleRate,
+    ].join(",") + "\n";
+
+    if (!fs.existsSync(manifestPath)) {
+      fs.writeFileSync(manifestPath, MANIFEST_HEADER + row, "utf-8");
+    } else {
+      fs.appendFileSync(manifestPath, row, "utf-8");
+    }
+  } catch (e) {
+    console.error("generate: failed to write manifest.csv:", e);
+  }
+}
 
 async function saveToDatasets(
   filename: string, text: string, duration: number, voice: string,
@@ -104,6 +139,8 @@ export async function POST(request: Request) {
         if (result.error) {
           resolve(Response.json({ error: result.error }, { status: 500 }));
         } else {
+          // Write to manifest.csv so the Audio Library shows this file (non-blocking)
+          appendToManifest(result, text, voice, speed, emotion, sampleRate);
           // Auto-save to Datasets page (non-blocking)
           void saveToDatasets(
             String(result.filename),

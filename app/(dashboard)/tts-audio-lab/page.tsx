@@ -731,8 +731,11 @@ function BatchGeneratorSection() {
             if (evt.type === "start") setTotal(evt.total);
             if (evt.type === "progress") setProgress(evt.completed);
             if (evt.type === "done") {
-              setProgress(evt.total);
+              setProgress(evt.completed ?? evt.total);
               setManifestPath(evt.manifest_path);
+              if (!evt.success) {
+                setErrorMsg(evt.error ?? "Batch generation failed — no audio files were created.");
+              }
               setStatus(evt.success ? "done" : "error");
             }
             if (evt.type === "error") {
@@ -2297,27 +2300,41 @@ function LabTabs() {
   return (
     <div className="space-y-5">
       {/* Tab bar */}
-      <div
-        className="flex gap-0.5 rounded-lg p-1"
-        style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)", display: "inline-flex" }}
-      >
-        {LAB_TABS.map(({ id, label, Icon }) => {
-          const isActive = active === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setActive(id)}
-              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all"
-              style={isActive
-                ? { background: "white", color: "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                : { color: "var(--muted-foreground)" }
-              }
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          );
-        })}
+      <div className="overflow-x-auto -mx-1 px-1 pb-0.5">
+        <div
+          role="tablist"
+          aria-label="Audio Lab sections"
+          className="flex gap-1 rounded-xl p-1 min-w-max"
+          style={{ background: "rgba(6,15,46,0.7)", border: "1px solid rgba(0,212,232,0.2)" }}
+        >
+          {LAB_TABS.map(({ id, label, Icon }) => {
+            const isActive = active === id;
+            return (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActive(id)}
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                style={isActive
+                  ? {
+                      background: "rgba(0,212,232,0.18)",
+                      color: "#00d4e8",
+                      border: "1px solid rgba(0,212,232,0.4)",
+                      boxShadow: "0 0 12px rgba(0,212,232,0.15)",
+                    }
+                  : {
+                      color: "rgba(148,163,184,0.7)",
+                      border: "1px solid transparent",
+                    }
+                }
+              >
+                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-cyan-400" : ""}`} aria-hidden="true" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Content */}
