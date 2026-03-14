@@ -27,6 +27,9 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  MessageSquare,
+  Users,
+  Database,
 } from "lucide-react";
 
 // Alias so the rest of the file uses Waveform
@@ -46,6 +49,94 @@ const VOICES = [
 ];
 
 const FORMATS = ["wav", "mp3"] as const;
+
+// ─── Conversation voice presets ────────────────────────────────────────────────
+const AGENT_VOICE    = "male-1";    // Adam
+const CUSTOMER_VOICE = "female-1";  // Bella
+
+// ─── Sample conversation transcripts ──────────────────────────────────────────
+interface Utterance { speaker: "agent" | "customer"; text: string }
+interface SampleTranscript { id: string; title: string; category: string; utterances: Utterance[] }
+
+const SAMPLE_TRANSCRIPTS: SampleTranscript[] = [
+  {
+    id: "account-inquiry",
+    title: "Account Inquiry",
+    category: "Banking",
+    utterances: [
+      { speaker: "agent",    text: "Thank you for calling support. My name is Sarah. How can I help you today?" },
+      { speaker: "customer", text: "Hi Sarah, I need to check my account balance and recent transactions." },
+      { speaker: "agent",    text: "I'd be happy to help. Can you verify your account number and date of birth?" },
+      { speaker: "customer", text: "Sure, account number 4872, born March 12, 1985." },
+      { speaker: "agent",    text: "Thank you. Your balance is $1,243.50. Shall I read recent transactions?" },
+    ],
+  },
+  {
+    id: "tech-support",
+    title: "Technical Support",
+    category: "ISP",
+    utterances: [
+      { speaker: "agent",    text: "Hello, technical support, this is Mike speaking." },
+      { speaker: "customer", text: "Hi Mike, my internet has been down since this morning. I work from home." },
+      { speaker: "agent",    text: "I'm sorry to hear that. Let me run a diagnostic. Can you check if the router lights are on?" },
+      { speaker: "customer", text: "Yes, the power light is on but the internet light is blinking red." },
+      { speaker: "agent",    text: "Got it. Please unplug the router, wait 30 seconds, then plug it back in." },
+    ],
+  },
+  {
+    id: "billing-dispute",
+    title: "Billing Dispute",
+    category: "Subscription",
+    utterances: [
+      { speaker: "agent",    text: "Billing department, this is James. How may I assist you?" },
+      { speaker: "customer", text: "I was charged twice for my subscription this month. It's very frustrating." },
+      { speaker: "agent",    text: "I completely understand your concern. I apologize for the inconvenience." },
+      { speaker: "customer", text: "The charge is $49.99 and it appeared twice on November 3rd." },
+      { speaker: "agent",    text: "I can confirm the duplicate charge. I'll process a full refund within 3 to 5 business days." },
+    ],
+  },
+  {
+    id: "mixed-benchmark",
+    title: "Numbers & Proper Nouns",
+    category: "STT Benchmark",
+    utterances: [
+      { speaker: "agent",    text: "Hi, this is Rachel from Apex Solutions. How can I help?" },
+      { speaker: "customer", text: "I need to reschedule my appointment on January 15th at 2:30 PM." },
+      { speaker: "agent",    text: "Of course. I see your booking under David Kowalski, reference number A-7749-B." },
+      { speaker: "customer", text: "That's correct. Can we move it to January 22nd, preferably morning?" },
+      { speaker: "agent",    text: "Absolutely. I've rescheduled you for January 22nd at 10:00 AM. You'll get a confirmation email." },
+    ],
+  },
+  {
+    id: "cancellation-flow",
+    title: "Cancellation Flow",
+    category: "Retention",
+    utterances: [
+      { speaker: "agent",    text: "Retention team, this is Lisa. How can I help you today?" },
+      { speaker: "customer", text: "I'd like to cancel my account. I've been a customer for three years but prices went up." },
+      { speaker: "agent",    text: "I'm sorry to hear that. Before we proceed, may I ask what's driving this decision?" },
+      { speaker: "customer", text: "The new price is $89 per month. It's just too expensive for me now." },
+      { speaker: "agent",    text: "I understand. I can offer you a reduced rate of $59 per month for the next 6 months." },
+    ],
+  },
+];
+
+function transcriptToText(utterances: Utterance[]): string {
+  return utterances.map((u) => `${u.speaker === "agent" ? "Agent" : "Customer"}: ${u.text}`).join("\n");
+}
+
+function parseTranscriptText(raw: string): Utterance[] {
+  return raw.split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line): Utterance[] => {
+      const agentMatch    = /^agent\s*:\s*/i.exec(line);
+      const customerMatch = /^customer\s*:\s*/i.exec(line);
+      if (agentMatch)    return [{ speaker: "agent",    text: line.slice(agentMatch[0].length).trim() }];
+      if (customerMatch) return [{ speaker: "customer", text: line.slice(customerMatch[0].length).trim() }];
+      return [];
+    });
+}
 
 const STT_MODELS = [
   { key: "whisper",    label: "Whisper large-v3",        vendor: "OpenAI",     accent: "#22c55e" },
@@ -1858,10 +1949,345 @@ function AudioLibrarySection() {
 
 // ─── Custom Tab bar (avoids @radix-ui/react-tabs Turbopack resolution issue) ──
 
+// ─── Section 4: Conversation Generator ────────────────────────────────────────
+
+function ConversationGeneratorSection() {
+  const [transcript, setTranscript]   = useState(transcriptToText(SAMPLE_TRANSCRIPTS[0]!.utterances));
+  const [agentVoice, setAgentVoice]   = useState(AGENT_VOICE);
+  const [customerVoice, setCustomerVoice] = useState(CUSTOMER_VOICE);
+  const [speed, setSpeed]             = useState(1.0);
+  const [emotion, setEmotion]         = useState(0.5);
+  const [outputDir, setOutputDir]     = useState("~/audio_samples/conversations");
+  const [title, setTitle]             = useState(SAMPLE_TRANSCRIPTS[0]!.id);
+
+  const [status, setStatus]   = useState<"idle" | "running" | "done" | "error">("idle");
+  const [progress, setProgress] = useState(0);
+  const [total, setTotal]       = useState(0);
+  const [currentSpeaker, setCurrentSpeaker] = useState("");
+  const [result, setResult]   = useState<{
+    filename: string; duration_seconds: number; utterance_count: number;
+    sample_rate: number; channels: number;
+  } | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const audioUrl = result ? `/api/tts/file/${encodeURIComponent(result.filename)}` : null;
+
+  function loadSample(s: SampleTranscript) {
+    setTranscript(transcriptToText(s.utterances));
+    setTitle(s.id);
+  }
+
+  async function handleGenerate() {
+    const utterances = parseTranscriptText(transcript);
+    if (utterances.length === 0) return;
+    setStatus("running");
+    setResult(null);
+    setProgress(0);
+    setTotal(utterances.length);
+    setErrorMsg("");
+    setPlaying(false);
+    if (audioRef.current) audioRef.current.pause();
+
+    const res = await fetch("/api/tts/conversation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript: utterances, title, agentVoice, customerVoice, speed, emotion, outputDir }),
+    });
+
+    if (!res.ok || !res.body) {
+      setStatus("error");
+      setErrorMsg("Request failed");
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const dec    = new TextDecoder();
+    let   buf    = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const events = buf.split("\n\n");
+      buf = events.pop() ?? "";
+      for (const evt of events) {
+        const dataLine = evt.split("\n").find((l) => l.startsWith("data: "));
+        if (!dataLine) continue;
+        try {
+          const obj = JSON.parse(dataLine.slice(6)) as Record<string, unknown>;
+          if (obj.error) { setStatus("error"); setErrorMsg(String(obj.error)); return; }
+          if (typeof obj.progress === "number") {
+            setProgress(obj.progress + 1);
+            setCurrentSpeaker(String(obj.speaker ?? ""));
+          }
+          if (obj.filename) {
+            setResult({
+              filename:         String(obj.filename),
+              duration_seconds: Number(obj.duration_seconds),
+              utterance_count:  Number(obj.utterance_count),
+              sample_rate:      Number(obj.sample_rate),
+              channels:         Number(obj.channels),
+            });
+            setStatus("done");
+          }
+        } catch { /* skip malformed SSE */ }
+      }
+    }
+    if (status === "running") setStatus("done");
+  }
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (playing) { audioRef.current.pause(); setPlaying(false); }
+    else         { void audioRef.current.play(); setPlaying(true); }
+  };
+
+  const utterances = parseTranscriptText(transcript);
+  const agentLines    = utterances.filter((u) => u.speaker === "agent").length;
+  const customerLines = utterances.filter((u) => u.speaker === "customer").length;
+
+  return (
+    <div className="space-y-5">
+      {/* Sample picker */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,0.6)" }}>
+          Sample Transcripts — click to load
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {SAMPLE_TRANSCRIPTS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => loadSample(s)}
+              className="text-left rounded-xl px-4 py-3 transition-all hover:scale-[1.02]"
+              style={title === s.id
+                ? { background: "rgba(0,212,232,0.12)", border: "1px solid rgba(0,212,232,0.4)" }
+                : { background: "rgba(6,15,46,0.5)", border: "1px solid rgba(0,212,232,0.12)" }
+              }
+            >
+              <p className="text-xs font-semibold" style={{ color: title === s.id ? "#00d4e8" : "#f1f5f9" }}>
+                {s.title}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "rgba(148,163,184,0.6)" }}>
+                {s.category} · {s.utterances.length} turns
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: transcript + settings */}
+        <Card className="glass-card border-0 ai-glow">
+          <CardHeader className="pb-3 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+              <MessageSquare className="h-4 w-4" style={{ color: "#00d4e8" }} />
+              Transcript
+              {utterances.length > 0 && (
+                <span className="ml-auto text-xs font-normal flex items-center gap-2">
+                  <span style={{ color: "#7c3aed" }}>Agent ×{agentLines}</span>
+                  <span style={{ color: "#00d4e8" }}>Customer ×{customerLines}</span>
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>
+                Format: <code style={{ color: "#00d4e8" }}>Agent: text</code> or <code style={{ color: "#00d4e8" }}>Customer: text</code>, one per line
+              </label>
+              <textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                rows={10}
+                className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none font-mono"
+                style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)", lineHeight: "1.65" }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.5)")}
+                onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.2)")}
+              />
+            </div>
+
+            {/* Voice assignment */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: "#94a3b8" }}>
+                  <span className="h-2 w-2 rounded-full inline-block" style={{ background: "#7c3aed" }} />
+                  Agent voice (left ch.)
+                </label>
+                <select
+                  value={agentVoice}
+                  onChange={(e) => setAgentVoice(e.target.value)}
+                  className="lab-input w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                  style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(124,58,237,0.3)" }}
+                >
+                  {VOICES.filter((v) => v.value !== "default").map((v) => (
+                    <option key={v.value} value={v.value}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: "#94a3b8" }}>
+                  <span className="h-2 w-2 rounded-full inline-block" style={{ background: "#00d4e8" }} />
+                  Customer voice (right ch.)
+                </label>
+                <select
+                  value={customerVoice}
+                  onChange={(e) => setCustomerVoice(e.target.value)}
+                  className="lab-input w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                  style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.3)" }}
+                >
+                  {VOICES.filter((v) => v.value !== "default").map((v) => (
+                    <option key={v.value} value={v.value}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <SliderRow label="Speed" min={0.5} max={2.0} step={0.05} value={speed} onChange={setSpeed} formatValue={(v) => `${v.toFixed(2)}×`} />
+            <SliderRow label="Emotion" min={0.0} max={1.0} step={0.05} value={emotion} onChange={setEmotion} formatValue={(v) => v.toFixed(2)} />
+
+            {/* Output directory */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>Output Directory</label>
+              <input
+                type="text"
+                value={outputDir}
+                onChange={(e) => setOutputDir(e.target.value)}
+                className="lab-input w-full rounded-lg px-3 py-2 text-xs font-mono outline-none"
+                style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)" }}
+              />
+            </div>
+
+            <button
+              onClick={handleGenerate}
+              disabled={status === "running" || utterances.length === 0}
+              className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg, #7c3aed 0%, #00d4e8 100%)",
+                boxShadow: status === "running" ? "none" : "0 0 16px rgba(124,58,237,0.3)",
+              }}
+            >
+              {status === "running"
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating {progress}/{total}…</>
+                : <><Users className="h-4 w-4" /> Generate Conversation</>
+              }
+            </button>
+          </CardContent>
+        </Card>
+
+        {/* Right: output */}
+        <Card className="glass-card border-0 ai-glow">
+          <CardHeader className="pb-3 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+              <Waveform className="h-4 w-4" style={{ color: "#00d4e8" }} />
+              Output
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 space-y-4">
+            {/* Stereo channel legend */}
+            <div className="flex items-center gap-4 rounded-lg px-4 py-2.5" style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}>
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "#94a3b8" }}>
+                <span className="h-2.5 w-4 rounded-sm inline-block" style={{ background: "#7c3aed" }} />
+                Left ch. = Agent
+              </span>
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "#94a3b8" }}>
+                <span className="h-2.5 w-4 rounded-sm inline-block" style={{ background: "#00d4e8" }} />
+                Right ch. = Customer
+              </span>
+            </div>
+
+            {/* Progress */}
+            {status === "running" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs" style={{ color: "#94a3b8" }}>
+                  <span>Synthesizing utterance {progress} of {total}…</span>
+                  <span style={{ color: currentSpeaker === "agent" ? "#7c3aed" : "#00d4e8", textTransform: "capitalize" }}>
+                    {currentSpeaker}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,212,232,0.1)" }}>
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: total > 0 ? `${(progress / total) * 100}%` : "0%",
+                      background: "linear-gradient(to right, #7c3aed, #00d4e8)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="flex items-start gap-2 rounded-lg p-3 text-xs" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <span className="font-mono">{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Waveform */}
+            <div style={{ height: 120, overflow: "hidden" }}>
+              <WaveformCanvas audioUrl={audioUrl} />
+            </div>
+
+            {audioUrl && (
+              <audio ref={audioRef} src={audioUrl} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} preload="auto" />
+            )}
+
+            {/* Play controls */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={togglePlay}
+                disabled={!result}
+                className="flex h-9 w-9 items-center justify-center rounded-full transition-all disabled:opacity-30"
+                style={{ background: result ? "rgba(0,212,232,0.15)" : "rgba(0,212,232,0.05)", border: "1px solid rgba(0,212,232,0.3)", color: "#00d4e8" }}
+              >
+                {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
+              <div className="flex-1 space-y-0.5">
+                {result ? (
+                  <>
+                    <p className="text-xs font-medium truncate" style={{ color: "var(--foreground)" }}>{result.filename}</p>
+                    <p className="text-xs" style={{ color: "#64748b" }}>
+                      {fmtDuration(result.duration_seconds)} · {result.utterance_count} turns · stereo {result.sample_rate} Hz
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs" style={{ color: "rgba(148,163,184,0.4)" }}>No conversation generated yet</p>
+                )}
+              </div>
+              {result && (
+                <a
+                  href={`/api/tts/file/${encodeURIComponent(result.filename)}?download=1`}
+                  download={result.filename}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg transition-all hover:opacity-80"
+                  style={{ background: "rgba(0,212,232,0.1)", border: "1px solid rgba(0,212,232,0.2)", color: "#00d4e8" }}
+                >
+                  <Download className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+
+            {status === "done" && result && (
+              <div className="flex items-center gap-2 rounded-lg p-3 text-xs" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", color: "#10b981" }}>
+                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                Saved to Audio Library and Datasets page automatically.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Lab Tabs ─────────────────────────────────────────────────────────────────
+
 const LAB_TABS = [
-  { id: "generator", label: "Audio Generator", Icon: AudioWaveform },
-  { id: "batch",     label: "Batch Generator", Icon: ListMusic },
-  { id: "library",   label: "Audio Library",   Icon: FileText },
+  { id: "generator",     label: "Audio Generator",       Icon: AudioWaveform },
+  { id: "conversation",  label: "Conversation",          Icon: MessageSquare },
+  { id: "batch",         label: "Batch Generator",       Icon: ListMusic },
+  { id: "library",       label: "Audio Library",         Icon: FileText },
 ] as const;
 
 type LabTabId = typeof LAB_TABS[number]["id"];
@@ -1895,9 +2321,10 @@ function LabTabs() {
       </div>
 
       {/* Content */}
-      {active === "generator" && <AudioGeneratorSection />}
-      {active === "batch"     && <BatchGeneratorSection />}
-      {active === "library"   && <AudioLibrarySection />}
+      {active === "generator"    && <AudioGeneratorSection />}
+      {active === "conversation" && <ConversationGeneratorSection />}
+      {active === "batch"        && <BatchGeneratorSection />}
+      {active === "library"      && <AudioLibrarySection />}
     </div>
   );
 }
@@ -1922,31 +2349,64 @@ export default function TtsAudioLabPage() {
             backgroundSize: "24px 24px",
           }}
         />
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="rounded-lg p-2.5"
-              style={{ background: "rgba(0,212,232,0.15)", border: "1px solid rgba(0,212,232,0.3)" }}
-            >
-              <Waveform className="h-6 w-6" style={{ color: "#00d4e8" }} />
+        <div className="relative space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div
+                className="rounded-lg p-2.5"
+                style={{ background: "rgba(0,212,232,0.15)", border: "1px solid rgba(0,212,232,0.3)" }}
+              >
+                <Waveform className="h-6 w-6" style={{ color: "#00d4e8" }} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">TTS Audio Lab</h1>
+                <p className="mt-0.5 text-sm" style={{ color: "#94a3b8" }}>
+                  Generate, batch-produce, and manage TTS audio for Speech CoE evaluation pipelines
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">TTS Audio Lab</h1>
-              <p className="mt-0.5 text-sm" style={{ color: "#94a3b8" }}>
-                Generate, batch-produce, and manage TTS audio for Speech CoE evaluation pipelines
-              </p>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/datasets"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ background: "rgba(0,212,232,0.1)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }}
+              >
+                <Database className="h-3.5 w-3.5" />
+                Datasets
+                <ChevronRight className="h-3 w-3" />
+              </Link>
+              <Link
+                href="/evaluate/new?type=STT"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ background: "rgba(0,212,232,0.1)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }}
+              >
+                <Mic className="h-3.5 w-3.5" />
+                STT Evaluation
+                <ChevronRight className="h-3 w-3" />
+              </Link>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2">
-            <Link
-              href="/evaluate/new?type=STT"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-opacity hover:opacity-80"
-              style={{ background: "rgba(0,212,232,0.1)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }}
-            >
-              <Mic className="h-3.5 w-3.5" />
-              STT Evaluation
-              <ChevronRight className="h-3 w-3" />
-            </Link>
+
+          {/* Feature capability pills */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { Icon: Waveform,      label: "Single Audio Generator",   desc: "Single utterance, full voice control" },
+              { Icon: MessageSquare, label: "Conversation (2-channel)", desc: "Agent (L) + Customer (R) stereo WAV" },
+              { Icon: ListMusic,     label: "Batch Generator",          desc: "Matrix of speed × emotion × sentences" },
+              { Icon: FileText,      label: "Audio Library",            desc: "Browse & evaluate all generated files" },
+            ].map(({ Icon, label, desc }) => (
+              <div
+                key={label}
+                className="flex items-center gap-2 rounded-lg px-3 py-1.5"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#00d4e8" }} />
+                <div>
+                  <p className="text-xs font-semibold text-white leading-none">{label}</p>
+                  <p className="text-xs leading-none mt-0.5" style={{ color: "rgba(148,163,184,0.7)" }}>{desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

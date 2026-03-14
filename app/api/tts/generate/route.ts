@@ -1,5 +1,43 @@
 import { spawn } from "child_process";
 import path from "path";
+import { prisma } from "@/lib/prisma";
+
+const DATASET_SLUG = "tts-lab-generated";
+const DATASET_NAME = "TTS Lab Generated";
+
+async function saveToDatasets(
+  filename: string, text: string, duration: number, voice: string,
+) {
+  try {
+    let dataset = await prisma.evaluationDataset.findFirst({ where: { slug: DATASET_SLUG } });
+    if (!dataset) {
+      dataset = await prisma.evaluationDataset.create({
+        data: {
+          name: DATASET_NAME, slug: DATASET_SLUG, type: "STT",
+          description: "Audio samples auto-saved from TTS Audio Lab",
+          language: "en", sampleCount: 0, samples: [],
+        },
+      });
+    }
+    const existing = Array.isArray(dataset.samples)
+      ? (dataset.samples as Record<string, unknown>[]) : [];
+    const newSample = {
+      id: `lab-${Date.now()}`,
+      audioDescription: `${filename} · voice: ${voice} · single`,
+      groundTruth: text,
+      duration: Math.round(duration * 10) / 10,
+      difficulty: "medium",
+      useCase: "tts_output",
+    };
+    const updated = [...existing, newSample];
+    await prisma.evaluationDataset.update({
+      where: { id: dataset.id },
+      data: { samples: updated as never, sampleCount: updated.length },
+    });
+  } catch (e) {
+    console.error("generate save-to-datasets:", e);
+  }
+}
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -54,19 +92,25 @@ export async function POST(request: Request) {
     proc.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
     proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
 
-    proc.on("close", (code) => {
+    proc.on("close", async (code) => {
       if (code !== 0) {
         resolve(Response.json({ error: stderr || "TTS generation failed" }, { status: 500 }));
         return;
       }
       try {
-        // stdout may contain log lines before the JSON line — find the last JSON object
         const jsonLine = stdout.trim().split("\n").reverse().find((l) => l.startsWith("{"));
         if (!jsonLine) throw new Error("No JSON in output");
-        const result = JSON.parse(jsonLine);
+        const result = JSON.parse(jsonLine) as Record<string, unknown>;
         if (result.error) {
           resolve(Response.json({ error: result.error }, { status: 500 }));
         } else {
+          // Auto-save to Datasets page (non-blocking)
+          void saveToDatasets(
+            String(result.filename),
+            text,
+            Number(result.duration_seconds),
+            voice,
+          );
           resolve(Response.json(result));
         }
       } catch (e) {
