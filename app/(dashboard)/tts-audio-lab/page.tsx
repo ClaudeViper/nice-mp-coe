@@ -21,13 +21,17 @@ import {
   Mic,
   Settings2,
   ListMusic,
+  X,
+  FlaskConical,
+  BarChart2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 
 // Alias so the rest of the file uses Waveform
 const Waveform = AudioWaveform;
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -42,6 +46,52 @@ const VOICES = [
 ];
 
 const FORMATS = ["wav", "mp3"] as const;
+
+const STT_MODELS = [
+  { key: "whisper",    label: "Whisper large-v3",        vendor: "OpenAI",     accent: "#22c55e" },
+  { key: "google",     label: "Google Cloud STT v2",     vendor: "Google",     accent: "#3b82f6" },
+  { key: "aws",        label: "AWS Transcribe",          vendor: "Amazon",     accent: "#f59e0b" },
+  { key: "azure",      label: "Azure Speech Services",   vendor: "Microsoft",  accent: "#8b5cf6" },
+  { key: "assemblyai", label: "AssemblyAI Universal-2",  vendor: "AssemblyAI", accent: "#00d4e8" },
+];
+
+interface SttModelResult {
+  model: string;
+  model_label: string;
+  transcript: string;
+  wer: number;
+  cer: number;
+  latency_ms: number;
+  cost_estimate: number;
+  duration_secs: number;
+  evaluation_id: string | null;
+  error?: string;
+}
+
+interface BatchFileResult {
+  sentence_id: string;
+  audio_file: string;
+  reference_text: string;
+  results: SttModelResult[];
+  error?: string;
+}
+
+interface BatchAggregate {
+  model: string;
+  model_label: string;
+  files_processed: number;
+  avg_wer: number;
+  avg_cer: number;
+  avg_latency: number;
+  total_cost: number;
+  wer_min: number;
+  wer_max: number;
+}
+
+// LibraryEntry is defined later; TS allows forward-referencing interfaces
+type SttModalTarget =
+  | { mode: "single"; entry: LibraryEntry }
+  | { mode: "batch";  entries: LibraryEntry[] };
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -59,6 +109,44 @@ function fmtDuration(s: number | string) {
   const m = Math.floor(sec / 60);
   const ss = (sec % 60).toFixed(1).padStart(4, "0");
   return m > 0 ? `${m}m ${ss}s` : `${ss}s`;
+}
+
+function pct(v: number) { return `${(v * 100).toFixed(1)}%`; }
+
+function werStyle(wer: number): React.CSSProperties {
+  if (wer < 0.05) return { color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" };
+  if (wer < 0.10) return { color: "#f59e0b", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)" };
+  return { color: "#ef4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" };
+}
+
+function cerStyle(cer: number): React.CSSProperties {
+  if (cer < 0.03) return { color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)" };
+  if (cer < 0.06) return { color: "#f59e0b", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)" };
+  return { color: "#ef4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" };
+}
+
+function latStyle(ms: number): React.CSSProperties {
+  if (ms < 500) return { color: "#22c55e" };
+  if (ms < 1000) return { color: "#f59e0b" };
+  return { color: "#ef4444" };
+}
+
+function downloadCsv(rows: Array<Record<string, string | number | null>>, filename: string) {
+  const headers = Object.keys(rows[0] ?? {});
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) =>
+      headers.map((h) => {
+        const v = String(r[h] ?? "");
+        return v.includes(",") || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v;
+      }).join(",")
+    ),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ─── Waveform canvas ──────────────────────────────────────────────────────────
@@ -822,6 +910,594 @@ function BatchGeneratorSection() {
   );
 }
 
+// ─── STT Eval Modal ───────────────────────────────────────────────────────────
+
+function SttEvalModal({ target, onClose }: { target: SttModalTarget; onClose: () => void }) {
+  const isBatch = target.mode === "batch";
+  const fileCount = isBatch ? target.entries.length : 1;
+
+  const [selectedModels, setSelectedModels] = useState<string[]>(["whisper", "assemblyai"]);
+  const [referenceText, setReferenceText] = useState(
+    !isBatch ? (target.entry.text ?? "") : ""
+  );
+  const [step, setStep]         = useState<"config" | "running" | "results">("config");
+  const [results, setResults]   = useState<SttModelResult[] | null>(null);
+  const [batchFiles, setBatchFiles]         = useState<BatchFileResult[] | null>(null);
+  const [batchAggregates, setBatchAggregates] = useState<BatchAggregate[] | null>(null);
+  const [batchProgress, setBatchProgress]   = useState({ done: 0, total: 0, currentId: "" });
+  const [error, setError]       = useState<string | null>(null);
+  const [expandedRows, setExpandedRows]     = useState<Set<string>>(new Set());
+
+  const toggleModel = (key: string) => {
+    setSelectedModels((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const toggleRow = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleRun = async () => {
+    if (selectedModels.length === 0) return;
+    setStep("running");
+    setError(null);
+
+    if (isBatch) {
+      const files = target.entries.map((e) => ({
+        audio_file:     e.file_path,
+        reference_text: e.text,
+        sentence_id:    e.sentence_id,
+        voice:          e.voice,
+        speed:          e.speed,
+        emotion:        e.emotion,
+      }));
+      setBatchProgress({ done: 0, total: files.length, currentId: "" });
+
+      try {
+        const res = await fetch("/api/stt/batch-evaluate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ files, models: selectedModels }),
+        });
+        if (!res.ok || !res.body) throw new Error("Batch request failed");
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const parts = buf.split("\n\n");
+          buf = parts.pop() ?? "";
+          for (const part of parts) {
+            const line = part.split("\n").find((l) => l.startsWith("data: "));
+            if (!line) continue;
+            try {
+              const evt = JSON.parse(line.slice(6));
+              if (evt.type === "start")    setBatchProgress({ done: 0, total: evt.total, currentId: "" });
+              if (evt.type === "progress") setBatchProgress({ done: evt.done, total: evt.total, currentId: evt.current_id ?? "" });
+              if (evt.type === "done") {
+                setBatchFiles(evt.files);
+                setBatchAggregates(evt.aggregates);
+                setStep("results");
+              }
+            } catch {}
+          }
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Batch failed");
+        setStep("config");
+      }
+    } else {
+      try {
+        const res = await fetch("/api/stt/evaluate", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            audio_file:    target.entry.file_path,
+            models:        selectedModels,
+            reference_text: referenceText,
+            metadata: {
+              sentence_id: target.entry.sentence_id,
+              voice:       target.entry.voice,
+              speed:       target.entry.speed,
+              emotion:     target.entry.emotion,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Evaluation failed");
+        setResults(data.results);
+        setStep("results");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Evaluation failed");
+        setStep("config");
+      }
+    }
+  };
+
+  const handleDownloadCsv = () => {
+    if (results) {
+      const rows = results.map((r) => ({
+        model:        r.model_label,
+        transcript:   r.transcript,
+        wer_pct:      (r.wer * 100).toFixed(2),
+        cer_pct:      (r.cer * 100).toFixed(2),
+        latency_ms:   r.latency_ms,
+        cost_usd:     r.cost_estimate,
+        evaluation_id: r.evaluation_id ?? "",
+      }));
+      downloadCsv(rows, `stt_results_${Date.now()}.csv`);
+    } else if (batchFiles) {
+      const rows = batchFiles.flatMap((f) =>
+        f.results.map((r) => ({
+          sentence_id:    f.sentence_id,
+          reference_text: f.reference_text,
+          model:          r.model_label,
+          transcript:     r.transcript,
+          wer_pct:        (r.wer * 100).toFixed(2),
+          cer_pct:        (r.cer * 100).toFixed(2),
+          latency_ms:     r.latency_ms,
+          cost_usd:       r.cost_estimate,
+          evaluation_id:  r.evaluation_id ?? "",
+        }))
+      );
+      downloadCsv(rows, `stt_batch_results_${Date.now()}.csv`);
+    }
+  };
+
+  const title = isBatch
+    ? `Batch STT Evaluation — ${fileCount} files`
+    : `STT Evaluation — ${target.entry.sentence_id || target.entry.filename}`;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(3,9,26,0.85)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget && step !== "running") onClose(); }}
+    >
+      <div
+        className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-xl overflow-hidden"
+        style={{
+          background: "linear-gradient(180deg, #0c1e4a 0%, #060f2e 100%)",
+          border:     "1px solid rgba(0,212,232,0.25)",
+          boxShadow:  "0 0 60px rgba(0,212,232,0.1)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+          style={{ borderBottom: "1px solid rgba(0,212,232,0.12)" }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="rounded-lg p-2"
+              style={{ background: "rgba(0,212,232,0.12)", border: "1px solid rgba(0,212,232,0.25)" }}
+            >
+              <FlaskConical className="h-4 w-4" style={{ color: "#00d4e8" }} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-white">{title}</h2>
+              <p className="text-xs" style={{ color: "#64748b" }}>
+                {step === "config"  && "Select models and configure evaluation"}
+                {step === "running" && (isBatch ? `Processing ${batchProgress.done} / ${batchProgress.total}…` : "Running evaluation…")}
+                {step === "results" && "Comparison results — saved to evaluations database"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={step === "running"}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:opacity-80 disabled:opacity-30"
+            style={{ background: "rgba(255,255,255,0.05)", color: "#94a3b8" }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+
+          {/* ── Config step ───────────────────────────────────────────────── */}
+          {step === "config" && (
+            <>
+              {/* Reference text (single mode) */}
+              {!isBatch && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>
+                    Reference text (ground truth)
+                  </label>
+                  <textarea
+                    value={referenceText}
+                    onChange={(e) => setReferenceText(e.target.value)}
+                    rows={2}
+                    className="w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none"
+                    style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)", color: "var(--foreground)" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.5)")}
+                    onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.2)")}
+                  />
+                </div>
+              )}
+
+              {/* Batch info */}
+              {isBatch && (
+                <div
+                  className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm"
+                  style={{ background: "rgba(0,212,232,0.06)", border: "1px solid rgba(0,212,232,0.15)" }}
+                >
+                  <BarChart2 className="h-4 w-4 flex-shrink-0" style={{ color: "#00d4e8" }} />
+                  <span style={{ color: "#94a3b8" }}>
+                    Will evaluate <span style={{ color: "#00d4e8", fontWeight: 600 }}>{fileCount} audio files</span> against
+                    each selected model. Reference text comes from manifest.csv.
+                  </span>
+                </div>
+              )}
+
+              {/* Model selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>
+                  STT models to evaluate
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {STT_MODELS.map((m) => {
+                    const checked = selectedModels.includes(m.key);
+                    return (
+                      <button
+                        key={m.key}
+                        onClick={() => toggleModel(m.key)}
+                        className="flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-all"
+                        style={checked
+                          ? { background: `rgba(${m.accent === "#22c55e" ? "34,197,94" : m.accent === "#3b82f6" ? "59,130,246" : m.accent === "#f59e0b" ? "245,158,11" : m.accent === "#8b5cf6" ? "139,92,246" : "0,212,232"},0.12)`, border: `1px solid ${m.accent}40` }
+                          : { background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.08)" }
+                        }
+                      >
+                        <div
+                          className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded"
+                          style={checked
+                            ? { background: m.accent, boxShadow: `0 0 6px ${m.accent}60` }
+                            : { border: "1px solid rgba(148,163,184,0.3)" }
+                          }
+                        >
+                          {checked && <CheckCircle2 className="h-3 w-3 text-white" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium" style={{ color: checked ? "white" : "#94a3b8" }}>
+                            {m.label}
+                          </p>
+                          <p className="text-xs" style={{ color: "#64748b" }}>{m.vendor}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}>
+                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Running step ──────────────────────────────────────────────── */}
+          {step === "running" && (
+            <div className="flex flex-col items-center justify-center py-10 space-y-5">
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-full" style={{ background: "rgba(0,212,232,0.1)", border: "1px solid rgba(0,212,232,0.3)" }}>
+                <Loader2 className="h-8 w-8 animate-spin" style={{ color: "#00d4e8" }} />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-semibold text-white">
+                  {isBatch ? `Processing files…` : `Running ${selectedModels.length} model${selectedModels.length > 1 ? "s" : ""}…`}
+                </p>
+                <p className="text-xs" style={{ color: "#64748b" }}>
+                  {isBatch
+                    ? batchProgress.currentId ? `Current: ${batchProgress.currentId}` : "Starting…"
+                    : `WER & CER calculated with jiwer`
+                  }
+                </p>
+              </div>
+              {isBatch && batchProgress.total > 0 && (
+                <div className="w-full space-y-1.5">
+                  <div className="flex justify-between text-xs" style={{ color: "#64748b" }}>
+                    <span>Files processed</span>
+                    <span style={{ color: "#00d4e8" }}>{batchProgress.done} / {batchProgress.total}</span>
+                  </div>
+                  <div className="relative h-2 w-full overflow-hidden rounded-full" style={{ background: "rgba(0,212,232,0.1)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${batchProgress.total > 0 ? (batchProgress.done / batchProgress.total) * 100 : 0}%`,
+                        background: "linear-gradient(90deg, #00d4e8, #7c3aed)",
+                        boxShadow: "0 0 8px rgba(0,212,232,0.4)",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Results step ──────────────────────────────────────────────── */}
+          {step === "results" && (
+            <>
+              {/* ─ Single results ─ */}
+              {results && (
+                <div className="space-y-4">
+                  <div
+                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs"
+                    style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                    Evaluated with {results.length} model{results.length > 1 ? "s" : ""} · WER/CER via jiwer · Results saved to benchmark database
+                  </div>
+
+                  <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid rgba(0,212,232,0.12)" }}>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ background: "rgba(6,15,46,0.8)", borderBottom: "1px solid rgba(0,212,232,0.1)", color: "#64748b" }}>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Model</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Transcript</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">WER</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">CER</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Latency</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Cost</th>
+                          <th className="px-4 py-2.5 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.map((r, i) => {
+                          const expanded = expandedRows.has(r.model);
+                          const modelDef = STT_MODELS.find((m) => m.key === r.model);
+                          return (
+                            <>
+                              <tr
+                                key={r.model}
+                                style={{ borderBottom: i < results.length - 1 ? "1px solid rgba(0,212,232,0.06)" : undefined }}
+                              >
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: modelDef?.accent ?? "#00d4e8", boxShadow: `0 0 4px ${modelDef?.accent ?? "#00d4e8"}` }} />
+                                    <div>
+                                      <p className="text-xs font-semibold text-white">{r.model_label}</p>
+                                      <p className="text-xs" style={{ color: "#64748b" }}>{modelDef?.vendor}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 max-w-[180px]">
+                                  <p className="truncate text-xs" style={{ color: "#94a3b8" }} title={r.transcript}>
+                                    {r.transcript || <span style={{ color: "#64748b", fontStyle: "italic" }}>empty</span>}
+                                  </p>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="rounded-full px-2 py-0.5 text-xs font-mono font-semibold" style={werStyle(r.wer)}>
+                                    {pct(r.wer)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="rounded-full px-2 py-0.5 text-xs font-mono font-semibold" style={cerStyle(r.cer)}>
+                                    {pct(r.cer)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-xs font-mono" style={latStyle(r.latency_ms)}>
+                                    {r.latency_ms} ms
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-xs font-mono" style={{ color: r.cost_estimate === 0 ? "#22c55e" : "#94a3b8" }}>
+                                    {r.cost_estimate === 0 ? "Free" : `$${r.cost_estimate.toFixed(5)}`}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <button onClick={() => toggleRow(r.model)} style={{ color: "#64748b" }}>
+                                    {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                  </button>
+                                </td>
+                              </tr>
+                              {expanded && (
+                                <tr key={`${r.model}-expand`} style={{ background: "rgba(6,15,46,0.6)" }}>
+                                  <td colSpan={7} className="px-5 pb-4 pt-2">
+                                    <p className="text-xs font-medium mb-1" style={{ color: "#64748b" }}>Full transcript</p>
+                                    <p className="text-sm rounded-lg p-3" style={{ background: "rgba(0,212,232,0.04)", border: "1px solid rgba(0,212,232,0.1)", color: "#94a3b8", lineHeight: 1.6 }}>
+                                      {r.transcript || <em>No transcript</em>}
+                                    </p>
+                                    {r.evaluation_id && (
+                                      <a
+                                        href={`/evaluate/${r.evaluation_id}`}
+                                        className="mt-2 inline-flex items-center gap-1 text-xs transition-opacity hover:opacity-80"
+                                        style={{ color: "#00d4e8" }}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        View in Evaluations
+                                      </a>
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ─ Batch results ─ */}
+              {batchAggregates && batchFiles && (
+                <div className="space-y-4">
+                  <div
+                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs"
+                    style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                    {batchFiles.length} files × {batchAggregates.length} models · WER/CER via jiwer · Results saved to benchmark database
+                  </div>
+
+                  {/* Aggregate table */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#64748b" }}>
+                      Model Comparison — Aggregate
+                    </p>
+                    <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid rgba(0,212,232,0.12)" }}>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr style={{ background: "rgba(6,15,46,0.8)", borderBottom: "1px solid rgba(0,212,232,0.1)", color: "#64748b" }}>
+                            {["Model", "Files", "Avg WER", "WER Range", "Avg CER", "Avg Latency", "Total Cost"].map((h) => (
+                              <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {batchAggregates.map((a, i) => {
+                            const modelDef = STT_MODELS.find((m) => m.key === a.model);
+                            return (
+                              <tr key={a.model} style={{ borderBottom: i < batchAggregates.length - 1 ? "1px solid rgba(0,212,232,0.06)" : undefined }}>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full" style={{ background: modelDef?.accent ?? "#00d4e8" }} />
+                                    <p className="text-xs font-semibold text-white">{a.model_label}</p>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-xs font-mono" style={{ color: "#94a3b8" }}>{a.files_processed}</td>
+                                <td className="px-4 py-3">
+                                  <span className="rounded-full px-2 py-0.5 text-xs font-mono font-semibold" style={werStyle(a.avg_wer)}>{pct(a.avg_wer)}</span>
+                                </td>
+                                <td className="px-4 py-3 text-xs font-mono" style={{ color: "#64748b" }}>
+                                  {pct(a.wer_min)}–{pct(a.wer_max)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="rounded-full px-2 py-0.5 text-xs font-mono font-semibold" style={cerStyle(a.avg_cer)}>{pct(a.avg_cer)}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-xs font-mono" style={latStyle(a.avg_latency)}>{a.avg_latency} ms</span>
+                                </td>
+                                <td className="px-4 py-3 text-xs font-mono" style={{ color: a.total_cost === 0 ? "#22c55e" : "#94a3b8" }}>
+                                  {a.total_cost === 0 ? "Free" : `$${a.total_cost.toFixed(4)}`}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Per-file breakdown (collapsible) */}
+                  <div>
+                    <button
+                      onClick={() => toggleRow("__batch_files__")}
+                      className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-2"
+                      style={{ color: "#64748b" }}
+                    >
+                      {expandedRows.has("__batch_files__") ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      Per-file breakdown ({batchFiles.length} files)
+                    </button>
+                    {expandedRows.has("__batch_files__") && (
+                      <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        {batchFiles.map((f) => (
+                          <div key={f.sentence_id} className="rounded-lg p-3" style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.08)" }}>
+                            <p className="text-xs font-medium mb-2">
+                              <span className="font-mono" style={{ color: "#00d4e8" }}>{f.sentence_id}</span>
+                              <span className="ml-2" style={{ color: "#64748b" }}>{f.reference_text}</span>
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {f.results.map((r) => {
+                                const m = STT_MODELS.find((x) => x.key === r.model);
+                                return (
+                                  <div key={r.model} className="flex items-center gap-1.5 rounded-md px-2 py-1" style={{ background: "rgba(0,212,232,0.05)", border: "1px solid rgba(0,212,232,0.1)" }}>
+                                    <div className="h-1.5 w-1.5 rounded-full" style={{ background: m?.accent ?? "#00d4e8" }} />
+                                    <span className="text-xs" style={{ color: "#94a3b8" }}>{r.model_label.split(" ")[0]}</span>
+                                    <span className="text-xs font-mono font-semibold" style={werStyle(r.wer)}>{pct(r.wer)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="flex items-center justify-between gap-3 px-5 py-4 flex-shrink-0"
+          style={{ borderTop: "1px solid rgba(0,212,232,0.1)" }}
+        >
+          <div className="flex items-center gap-2">
+            {step === "results" && (
+              <>
+                <button
+                  onClick={handleDownloadCsv}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(0,212,232,0.08)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.2)" }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download CSV
+                </button>
+                <a
+                  href="/evaluate?type=STT"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(124,58,237,0.08)", color: "#a855f7", border: "1px solid rgba(124,58,237,0.2)" }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View Evaluations
+                </a>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {step === "config" && (
+              <>
+                <button
+                  onClick={onClose}
+                  className="rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{ color: "#64748b" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRun}
+                  disabled={selectedModels.length === 0}
+                  className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #00d4e8 0%, #7c3aed 100%)", boxShadow: "0 0 12px rgba(0,212,232,0.25)" }}
+                >
+                  <FlaskConical className="h-4 w-4" />
+                  Run Evaluation ({selectedModels.length} model{selectedModels.length !== 1 ? "s" : ""})
+                </button>
+              </>
+            )}
+            {step === "results" && (
+              <button
+                onClick={onClose}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: "rgba(0,212,232,0.15)", border: "1px solid rgba(0,212,232,0.3)" }}
+              >
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Section 3: Audio Library ─────────────────────────────────────────────────
 
 interface LibraryEntry {
@@ -847,6 +1523,7 @@ function AudioLibrarySection() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [playingFile, setPlayingFile] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [sttModalTarget, setSttModalTarget] = useState<SttModalTarget | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const load = useCallback(async () => {
@@ -987,6 +1664,18 @@ function AudioLibrarySection() {
             >
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               Delete ({selected.size})
+            </button>
+          )}
+
+          {/* Batch STT Eval */}
+          {filtered.length > 0 && (
+            <button
+              onClick={() => setSttModalTarget({ mode: "batch", entries: filtered })}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+              style={{ background: "rgba(124,58,237,0.12)", color: "#a855f7", border: "1px solid rgba(124,58,237,0.3)" }}
+            >
+              <FlaskConical className="h-3.5 w-3.5" />
+              Batch STT Eval ({filtered.length})
             </button>
           )}
 
@@ -1131,14 +1820,14 @@ function AudioLibrarySection() {
                           <Download className="h-3 w-3" />
                         </a>
                         {/* Send to STT Eval */}
-                        <Link
-                          href={`/evaluate/new?type=STT&audioFile=${encodeURIComponent(entry.filename)}`}
-                          className="flex h-6 w-6 items-center justify-center rounded-md transition-all"
-                          style={{ background: "rgba(124,58,237,0.08)", color: "#a855f7" }}
+                        <button
+                          onClick={() => setSttModalTarget({ mode: "single", entry })}
+                          className="flex h-6 w-6 items-center justify-center rounded-md transition-all hover:opacity-80"
+                          style={{ background: "rgba(124,58,237,0.12)", color: "#a855f7", border: "1px solid rgba(124,58,237,0.2)" }}
                           title="Send to STT Evaluation"
                         >
-                          <Mic className="h-3 w-3" />
-                        </Link>
+                          <FlaskConical className="h-3 w-3" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1161,7 +1850,61 @@ function AudioLibrarySection() {
           )}
         </div>
       )}
+
+      {/* STT Eval Modal */}
+      {sttModalTarget && (
+        <SttEvalModal
+          target={sttModalTarget}
+          onClose={() => setSttModalTarget(null)}
+        />
+      )}
     </Card>
+  );
+}
+
+// ─── Custom Tab bar (avoids @radix-ui/react-tabs Turbopack resolution issue) ──
+
+const LAB_TABS = [
+  { id: "generator", label: "Audio Generator", Icon: AudioWaveform },
+  { id: "batch",     label: "Batch Generator", Icon: ListMusic },
+  { id: "library",   label: "Audio Library",   Icon: FileText },
+] as const;
+
+type LabTabId = typeof LAB_TABS[number]["id"];
+
+function LabTabs() {
+  const [active, setActive] = useState<LabTabId>("generator");
+  return (
+    <div className="space-y-5">
+      {/* Tab bar */}
+      <div
+        className="flex gap-0.5 rounded-lg p-1"
+        style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)", display: "inline-flex" }}
+      >
+        {LAB_TABS.map(({ id, label, Icon }) => {
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActive(id)}
+              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all"
+              style={isActive
+                ? { background: "white", color: "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "var(--muted-foreground)" }
+              }
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      {active === "generator" && <AudioGeneratorSection />}
+      {active === "batch"     && <BatchGeneratorSection />}
+      {active === "library"   && <AudioLibrarySection />}
+    </div>
   );
 }
 
@@ -1214,43 +1957,8 @@ export default function TtsAudioLabPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="generator">
-        <TabsList
-          className="h-auto p-1 gap-0.5"
-          style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}
-        >
-          {[
-            { value: "generator", label: "Audio Generator", icon: Waveform },
-            { value: "batch",     label: "Batch Generator", icon: ListMusic },
-            { value: "library",   label: "Audio Library",   icon: FileText },
-          ].map(({ value, label, icon: Icon }) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all data-[state=active]:shadow-none"
-              style={{
-                color: "var(--muted-foreground)",
-              }}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="generator" className="mt-5">
-          <AudioGeneratorSection />
-        </TabsContent>
-
-        <TabsContent value="batch" className="mt-5">
-          <BatchGeneratorSection />
-        </TabsContent>
-
-        <TabsContent value="library" className="mt-5">
-          <AudioLibrarySection />
-        </TabsContent>
-      </Tabs>
+      {/* Tabs — custom implementation (no @radix-ui/react-tabs needed) */}
+      <LabTabs />
     </div>
   );
 }
