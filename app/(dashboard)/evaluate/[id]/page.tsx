@@ -24,21 +24,6 @@ import {
   TableProperties,
 } from "lucide-react";
 import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
-import {
   findMetric,
   evaluateMetric,
   METRIC_COLORS,
@@ -165,7 +150,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
   );
 }
 
-// ─── Radar Chart ──────────────────────────────────────────────────────────────
+// ─── Radar Chart (pure SVG, no external deps) ────────────────────────────────
 
 function MetricsRadarChart({
   metrics,
@@ -174,51 +159,131 @@ function MetricsRadarChart({
   metrics: SampleResult[];
   evalType: string;
 }) {
-  // Normalize all metrics to 0-100 scale for radar
   const radarData = metrics.map((m) => {
     const v = parseFloat(m.metricValue);
     const def = findMetric(m.metricName, evalType);
     const label = def?.label ?? m.metricName;
-
-    // Normalize: lower-is-better metrics get inverted
     let normalized = v;
     const lowerIsBetter = ["WER", "CER", "avg_latency", "RTF", "TTFB", "roundtrip_WER", "e2e_latency"].includes(m.metricName);
     if (lowerIsBetter) {
-      // Map to 0-100 where 100 = excellent
       if (m.metricUnit === "%") normalized = Math.max(0, 100 - v * 2);
       else if (m.metricUnit === "ms") normalized = Math.max(0, 100 - v / 30);
       else normalized = Math.max(0, 100 - v * 50);
     } else if (m.metricName === "MOS") {
       normalized = (v / 5) * 100;
     }
-
-    return { metric: label, value: Math.min(100, Math.max(0, Math.round(normalized))) };
+    return { label, value: Math.min(100, Math.max(0, Math.round(normalized))), raw: v, unit: m.metricUnit };
   });
 
+  if (radarData.length === 0) return null;
+
+  const cx = 160;
+  const cy = 140;
+  const r = 100;
+  const n = radarData.length;
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const angleOf = (i: number) => (Math.PI * 2 * i) / n - Math.PI / 2;
+  const ptOf = (i: number, radius: number) => ({
+    x: cx + radius * Math.cos(angleOf(i)),
+    y: cy + radius * Math.sin(angleOf(i)),
+  });
+
+  // Grid rings at 25, 50, 75, 100
+  const rings = [25, 50, 75, 100];
+  const gridPoints = (frac: number) =>
+    Array.from({ length: n }, (_, i) => ptOf(i, r * frac / 100))
+      .map((p) => `${p.x},${p.y}`)
+      .join(" ");
+
+  // Data polygon
+  const dataPoly = radarData
+    .map((d, i) => ptOf(i, r * d.value / 100))
+    .map((p) => `${p.x},${p.y}`)
+    .join(" ");
+
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <RadarChart data={radarData}>
-        <PolarGrid stroke="rgba(0,212,232,0.15)" />
-        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9, fill: "#64748b" }} />
-        <Radar
-          name="Score"
-          dataKey="value"
-          stroke="#00d4e8"
-          fill="#00d4e8"
-          fillOpacity={0.15}
-          strokeWidth={2}
-        />
-        <Tooltip
-          formatter={(value) => [`${value}`, "Normalized Score"]}
-          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,212,232,0.2)", background: "#0c1e4a", color: "#e2e8f0" }}
-        />
-      </RadarChart>
-    </ResponsiveContainer>
+    <div className="relative" style={{ width: "100%", height: 280 }}>
+      <svg viewBox="0 0 320 280" style={{ width: "100%", height: "100%" }}>
+        {/* Grid rings */}
+        {rings.map((frac) => (
+          <polygon
+            key={frac}
+            points={gridPoints(frac)}
+            fill="none"
+            stroke="rgba(0,212,232,0.12)"
+            strokeWidth="1"
+          />
+        ))}
+        {/* Spokes */}
+        {radarData.map((_, i) => {
+          const outer = ptOf(i, r);
+          return <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="rgba(0,212,232,0.1)" strokeWidth="1" />;
+        })}
+        {/* Data polygon */}
+        <polygon points={dataPoly} fill="rgba(0,212,232,0.15)" stroke="#00d4e8" strokeWidth="2" />
+        {/* Data points */}
+        {radarData.map((d, i) => {
+          const pt = ptOf(i, r * d.value / 100);
+          return (
+            <circle
+              key={i}
+              cx={pt.x}
+              cy={pt.y}
+              r={hovered === i ? 5 : 3.5}
+              fill="#00d4e8"
+              stroke="#0c1e4a"
+              strokeWidth="1.5"
+              style={{ cursor: "pointer" }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          );
+        })}
+        {/* Labels */}
+        {radarData.map((d, i) => {
+          const labelR = r + 22;
+          const pt = ptOf(i, labelR);
+          const angle = (angleOf(i) * 180) / Math.PI;
+          const anchor = angle > 10 && angle < 170 ? "middle" : angle >= 170 || angle <= -170 ? "end" : angle < 10 && angle > -10 ? "middle" : "start";
+          return (
+            <text
+              key={i}
+              x={pt.x}
+              y={pt.y}
+              textAnchor={
+                Math.abs(Math.cos(angleOf(i))) < 0.2 ? "middle"
+                  : Math.cos(angleOf(i)) < 0 ? "end" : "start"
+              }
+              dominantBaseline="middle"
+              fontSize="9"
+              fill={hovered === i ? "#00d4e8" : "#94a3b8"}
+              fontWeight={hovered === i ? "600" : "400"}
+            >
+              {d.label.length > 12 ? d.label.slice(0, 11) + "…" : d.label}
+            </text>
+          );
+        })}
+        {/* Tooltip */}
+        {hovered !== null && radarData[hovered] && (() => {
+          const d = radarData[hovered]!;
+          const pt = ptOf(hovered, r * d.value / 100);
+          const tx = pt.x > 200 ? pt.x - 90 : pt.x + 8;
+          const ty = pt.y > 200 ? pt.y - 36 : pt.y - 10;
+          return (
+            <g>
+              <rect x={tx} y={ty} width={86} height={30} rx="5" fill="#0c1e4a" stroke="rgba(0,212,232,0.3)" strokeWidth="1" />
+              <text x={tx + 43} y={ty + 11} textAnchor="middle" fontSize="9" fill="#94a3b8">{d.label}</text>
+              <text x={tx + 43} y={ty + 22} textAnchor="middle" fontSize="10" fill="#00d4e8" fontWeight="600">{d.value}/100</text>
+            </g>
+          );
+        })()}
+      </svg>
+    </div>
   );
 }
 
-// ─── Time-Series Chart ────────────────────────────────────────────────────────
+// ─── Time-Series Chart (pure SVG, no external deps) ──────────────────────────
 
 function PerSampleTimeSeriesChart({
   sampleResults,
@@ -227,7 +292,6 @@ function PerSampleTimeSeriesChart({
   sampleResults: SampleResult[];
   evalType: string;
 }) {
-  // Group by sampleId, use primary metric per type
   const primaryMetric =
     evalType === "STT" ? "sample_wer" :
     evalType === "TTS" ? "sample_mos" :
@@ -236,7 +300,6 @@ function PerSampleTimeSeriesChart({
   const filtered = sampleResults
     .filter((r) => r.metricName === primaryMetric)
     .map((r, i) => ({
-      sample: r.sampleId ?? `S${i + 1}`,
       value: parseFloat(r.metricValue),
       label: r.sampleId?.replace(/^(clean|noisy|ivr|agent|support|ivr-s)-/, "") ?? `${i + 1}`,
     }));
@@ -250,33 +313,99 @@ function PerSampleTimeSeriesChart({
 
   const color = evalType === "STT" ? "#8b5cf6" : evalType === "TTS" ? "#14b8a6" : "#f97316";
 
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const W = 480;
+  const H = 180;
+  const padL = 36;
+  const padR = 12;
+  const padT = 10;
+  const padB = 24;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const values = filtered.map((d) => d.value);
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const range = maxV - minV || 1;
+
+  const xOf = (i: number) => padL + (i / Math.max(filtered.length - 1, 1)) * plotW;
+  const yOf = (v: number) => padT + plotH - ((v - minV) / range) * plotH;
+
+  const pathD = filtered
+    .map((d, i) => `${i === 0 ? "M" : "L"} ${xOf(i).toFixed(1)} ${yOf(d.value).toFixed(1)}`)
+    .join(" ");
+
+  // Y-axis tick labels (4 ticks)
+  const yTicks = [0, 0.33, 0.66, 1].map((f) => ({
+    v: minV + f * range,
+    y: padT + plotH - f * plotH,
+  }));
+
+  // X-axis tick labels — show at most 8
+  const step = Math.max(1, Math.floor(filtered.length / 8));
+  const xTicks = filtered
+    .map((d, i) => ({ label: d.label, x: xOf(i), i }))
+    .filter((_, i) => i % step === 0 || i === filtered.length - 1);
+
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={filtered} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,212,232,0.1)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 9, fill: "#64748b" }}
-          interval={Math.floor(filtered.length / 10)}
+    <div style={{ position: "relative", width: "100%", height: 220 }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "100%" }}>
+        {/* Grid lines */}
+        {yTicks.map((t) => (
+          <line key={t.v} x1={padL} y1={t.y} x2={W - padR} y2={t.y} stroke="rgba(0,212,232,0.08)" strokeWidth="1" strokeDasharray="3 3" />
+        ))}
+        {/* Y-axis labels */}
+        {yTicks.map((t) => (
+          <text key={t.v} x={padL - 4} y={t.y} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#64748b">
+            {t.v.toFixed(1)}
+          </text>
+        ))}
+        {/* X-axis labels */}
+        {xTicks.map((t) => (
+          <text key={t.i} x={t.x} y={H - 4} textAnchor="middle" fontSize="8" fill="#64748b">
+            {t.label.length > 6 ? t.label.slice(0, 5) + "…" : t.label}
+          </text>
+        ))}
+        {/* Line */}
+        <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+        {/* Area fill */}
+        <path
+          d={`${pathD} L ${xOf(filtered.length - 1).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xOf(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`}
+          fill={color}
+          fillOpacity="0.08"
         />
-        <YAxis tick={{ fontSize: 10, fill: "#64748b" }} />
-        <Tooltip
-          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgba(0,212,232,0.2)", background: "#0c1e4a", color: "#e2e8f0" }}
-          formatter={(value) => [typeof value === "number" ? value.toFixed(2) : value, metricLabel]}
-          labelFormatter={(label) => `Sample: ${label}`}
-        />
-        <Legend />
-        <Line
-          type="monotone"
-          dataKey="value"
-          name={metricLabel}
-          stroke={color}
-          strokeWidth={2}
-          dot={{ r: 2, fill: color }}
-          activeDot={{ r: 4 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+        {/* Dots */}
+        {filtered.map((d, i) => (
+          <circle
+            key={i}
+            cx={xOf(i)}
+            cy={yOf(d.value)}
+            r={hovered === i ? 5 : 2.5}
+            fill={color}
+            stroke="#0c1e4a"
+            strokeWidth="1.5"
+            style={{ cursor: "pointer" }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          />
+        ))}
+        {/* Tooltip */}
+        {hovered !== null && filtered[hovered] && (() => {
+          const d = filtered[hovered]!;
+          const tx = Math.min(xOf(hovered) + 6, W - 90);
+          const ty = Math.max(yOf(d.value) - 36, padT);
+          return (
+            <g>
+              <rect x={tx} y={ty} width={84} height={30} rx="5" fill="#0c1e4a" stroke={`${color}66`} strokeWidth="1" />
+              <text x={tx + 42} y={ty + 11} textAnchor="middle" fontSize="8" fill="#94a3b8">{d.label}</text>
+              <text x={tx + 42} y={ty + 22} textAnchor="middle" fontSize="10" fill={color} fontWeight="600">{d.value.toFixed(2)}</text>
+            </g>
+          );
+        })()}
+      </svg>
+      <div style={{ position: "absolute", bottom: 2, right: 8, fontSize: 10, color: "#64748b" }}>{metricLabel}</div>
+    </div>
   );
 }
 
