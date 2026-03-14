@@ -41,13 +41,14 @@ def load_tts_backend():
 
         def generate_chatterbox(text, voice, speed, emotion):
             wav = model.generate(text, exaggeration=emotion, cfg_weight=0.5)
-            audio = wav.squeeze().cpu().numpy()
+            # Always detach before .numpy() to avoid gradient/leaf-tensor errors
+            audio = wav.squeeze().detach().cpu().numpy()
             sr = model.sr
             if speed != 1.0:
                 import torchaudio
                 audio_t = torch.from_numpy(audio).unsqueeze(0)
                 audio_t = torchaudio.functional.resample(audio_t, sr, int(sr / speed))
-                audio = audio_t.squeeze().numpy()
+                audio = audio_t.squeeze().detach().cpu().numpy()
             return audio, sr
 
         return "chatterbox", generate_chatterbox
@@ -87,11 +88,14 @@ def load_tts_backend():
 def maybe_resample(audio, src_sr, dst_sr):
     if src_sr == dst_sr:
         return audio
+    # Normalise: convert Tensor → numpy before resampling
+    if hasattr(audio, "detach"):
+        audio = audio.detach().cpu().numpy()
     try:
         import torchaudio, torch
-        t = torch.from_numpy(audio).unsqueeze(0)
+        t = torch.from_numpy(np.asarray(audio)).unsqueeze(0)
         t = torchaudio.functional.resample(t, src_sr, dst_sr)
-        return t.squeeze().numpy()
+        return t.squeeze().detach().cpu().numpy()
     except ImportError:
         ratio = dst_sr / src_sr
         new_len = int(len(audio) * ratio)

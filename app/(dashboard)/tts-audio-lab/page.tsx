@@ -371,11 +371,10 @@ function AudioGeneratorSection() {
               onChange={(e) => setText(e.target.value.slice(0, 500))}
               placeholder="Enter text to synthesize…"
               rows={4}
-              className="w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+              className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
               style={{
                 background: "rgba(6,15,46,0.8)",
                 border: "1px solid rgba(0,212,232,0.2)",
-                color: "var(--foreground)",
                 fontFamily: "var(--font-sans)",
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.5)")}
@@ -389,11 +388,10 @@ function AudioGeneratorSection() {
             <select
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+              className="lab-input w-full rounded-lg px-3 py-2 text-sm outline-none"
               style={{
                 background: "rgba(6,15,46,0.8)",
                 border: "1px solid rgba(0,212,232,0.2)",
-                color: "var(--foreground)",
               }}
             >
               {VOICES.map((v) => (
@@ -706,11 +704,10 @@ function BatchGeneratorSection() {
               min={k === "step" ? 0.05 : min}
               max={k === "step" ? maxStep : max}
               onChange={(e) => onChange({ ...value, [k]: parseFloat(e.target.value) || 0 })}
-              className="w-full rounded-lg px-2 py-1.5 text-xs font-mono outline-none"
+              className="lab-input w-full rounded-lg px-2 py-1.5 text-xs font-mono outline-none"
               style={{
                 background: "rgba(6,15,46,0.8)",
                 border: "1px solid rgba(0,212,232,0.2)",
-                color: "var(--foreground)",
               }}
             />
           </div>
@@ -741,11 +738,10 @@ function BatchGeneratorSection() {
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
               rows={8}
-              className="w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none font-mono"
+              className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none font-mono"
               style={{
                 background: "rgba(6,15,46,0.8)",
                 border: "1px solid rgba(0,212,232,0.2)",
-                color: "var(--foreground)",
                 lineHeight: "1.6",
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.5)")}
@@ -759,11 +755,10 @@ function BatchGeneratorSection() {
               type="text"
               value={outputDir}
               onChange={(e) => setOutputDir(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-sm font-mono outline-none"
+              className="lab-input w-full rounded-lg px-3 py-2 text-sm font-mono outline-none"
               style={{
                 background: "rgba(6,15,46,0.8)",
                 border: "1px solid rgba(0,212,232,0.2)",
-                color: "var(--foreground)",
               }}
             />
           </div>
@@ -774,8 +769,8 @@ function BatchGeneratorSection() {
               <select
                 value={voice}
                 onChange={(e) => setVoice(e.target.value)}
-                className="w-full rounded-lg px-2.5 py-1.5 text-sm outline-none"
-                style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)", color: "var(--foreground)" }}
+                className="lab-input w-full rounded-lg px-2.5 py-1.5 text-sm outline-none"
+                style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)" }}
               >
                 {VOICES.map((v) => <option key={v.value} value={v.value}>{v.label.split(" · ")[0]} – {v.label.split(" · ")[1] ?? v.value}</option>)}
               </select>
@@ -1119,8 +1114,8 @@ function SttEvalModal({ target, onClose }: { target: SttModalTarget; onClose: ()
                     value={referenceText}
                     onChange={(e) => setReferenceText(e.target.value)}
                     rows={2}
-                    className="w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none"
-                    style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)", color: "var(--foreground)" }}
+                    className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none"
+                    style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.2)" }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.5)")}
                     onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(0,212,232,0.2)")}
                   />
@@ -1627,8 +1622,7 @@ function AudioLibrarySection() {
             placeholder="Search text or ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "var(--foreground)" }}
+            className="lab-input flex-1 bg-transparent text-sm outline-none"
           />
         </div>
 
@@ -1636,8 +1630,8 @@ function AudioLibrarySection() {
         <select
           value={filterVoice}
           onChange={(e) => setFilterVoice(e.target.value)}
-          className="rounded-lg px-2.5 py-1.5 text-xs outline-none"
-          style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.15)", color: "var(--foreground)" }}
+          className="lab-input rounded-lg px-2.5 py-1.5 text-xs outline-none"
+          style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.15)" }}
         >
           <option value="all">All voices</option>
           {uniqueVoices.map((v) => <option key={v} value={v}>{v}</option>)}
@@ -1647,8 +1641,8 @@ function AudioLibrarySection() {
         <select
           value={filterFormat}
           onChange={(e) => setFilterFormat(e.target.value)}
-          className="rounded-lg px-2.5 py-1.5 text-xs outline-none"
-          style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.15)", color: "var(--foreground)" }}
+          className="lab-input rounded-lg px-2.5 py-1.5 text-xs outline-none"
+          style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(0,212,232,0.15)" }}
         >
           <option value="all">All formats</option>
           {uniqueFormats.map((f) => <option key={f} value={f}>{f.toUpperCase()}</option>)}

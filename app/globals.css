@@ -141,6 +141,18 @@ body {
   pointer-events: none;
 }
 
+/* ── Lab inputs (dark-background forms) ─────────────────────────────────── */
+.lab-input {
+  color: #f1f5f9;
+}
+.lab-input::placeholder {
+  color: rgba(148, 163, 184, 0.45);
+}
+.lab-input:focus {
+  border-color: rgba(0, 212, 232, 0.5) !important;
+  outline: none;
+}
+
 /* ── Print ───────────────────────────────────────────────────────────────── */
 @media print {
   .print\:hidden { display: none !important; }
