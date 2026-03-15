@@ -16,6 +16,17 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+interface EvalConfig {
+  source?: string;
+  audioFile?: string;
+  referenceText?: string;
+  sentence_id?: string;
+  voice?: string;
+  speed?: string | number;
+  emotion?: string | number;
+  [key: string]: unknown;
+}
+
 interface EvaluationSummary {
   id: string;
   evaluationType: string;
@@ -27,6 +38,7 @@ interface EvaluationSummary {
   processedSamples: number;
   createdAt: string;
   completedAt: string | null;
+  config: EvalConfig | null;
   vendor: { name: string; slug: string };
   results: Array<{
     metricName: string;
@@ -248,6 +260,8 @@ export default function EvaluatePage() {
                     <th className="px-4 py-3">Vendor / Model</th>
                     <th className="px-4 py-3">Type</th>
                     <th className="px-4 py-3">Dataset</th>
+                    <th className="px-4 py-3">Transcript</th>
+                    <th className="px-4 py-3">Voice / File</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Key Metrics</th>
                     <th className="px-4 py-3">Date</th>
@@ -281,6 +295,53 @@ export default function EvaluatePage() {
                       <td className="px-4 py-3 text-xs" style={{ color: "#64748b" }}>
                         {ev.dataset}
                       </td>
+
+                      {/* Transcript */}
+                      <td className="px-4 py-3 max-w-xs">
+                        {ev.config?.referenceText ? (
+                          <span
+                            className="block truncate text-xs"
+                            style={{ color: "var(--foreground)" }}
+                            title={ev.config.referenceText}
+                          >
+                            {ev.config.referenceText}
+                          </span>
+                        ) : (
+                          <span className="text-xs" style={{ color: "rgba(100,116,139,0.5)" }}>—</span>
+                        )}
+                      </td>
+
+                      {/* Voice / File */}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-1">
+                          {ev.config?.voice && (
+                            <span
+                              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium w-fit"
+                              style={{ background: "rgba(168,85,247,0.12)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.25)" }}
+                            >
+                              🎙 {ev.config.voice}
+                            </span>
+                          )}
+                          {ev.config?.audioFile && (
+                            <span
+                              className="block truncate text-xs font-mono"
+                              style={{ color: "#64748b", maxWidth: 160 }}
+                              title={ev.config.audioFile}
+                            >
+                              {ev.config.audioFile.split("/").pop()}
+                            </span>
+                          )}
+                          {ev.config?.speed != null && (
+                            <span className="text-xs" style={{ color: "rgba(100,116,139,0.7)" }}>
+                              speed {ev.config.speed}×{ev.config?.emotion != null ? ` · emo ${ev.config.emotion}` : ""}
+                            </span>
+                          )}
+                          {!ev.config?.voice && !ev.config?.audioFile && (
+                            <span className="text-xs" style={{ color: "rgba(100,116,139,0.5)" }}>—</span>
+                          )}
+                        </div>
+                      </td>
+
                       <td className="px-4 py-3">
                         <StatusBadge status={ev.status} />
                       </td>
