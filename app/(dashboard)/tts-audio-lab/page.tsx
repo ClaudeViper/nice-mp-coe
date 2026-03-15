@@ -250,9 +250,23 @@ function downloadCsv(rows: Array<Record<string, string | number | null>>, filena
 
 // ─── Waveform canvas ──────────────────────────────────────────────────────────
 
-function WaveformCanvas({ audioUrl }: { audioUrl: string | null }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+function WaveformCanvas({
+  audioUrl,
+  audioRef,
+  playing,
+}: {
+  audioUrl: string | null;
+  audioRef?: React.RefObject<HTMLAudioElement | null>;
+  playing?: boolean;
+}) {
+  const canvasRef        = useRef<HTMLCanvasElement>(null);
+  const staticDrawFnRef  = useRef<(() => void) | null>(null);
+  const analyserRef      = useRef<AnalyserNode | null>(null);
+  const sourceRef        = useRef<MediaElementAudioSourceNode | null>(null);
+  const audioCtxRef      = useRef<AudioContext | null>(null);
+  const rafRef           = useRef<number | null>(null);
 
+  // ── Static decoded waveform ──────────────────────────────────────────────
   useEffect(() => {
     if (!audioUrl || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -261,53 +275,138 @@ function WaveformCanvas({ audioUrl }: { audioUrl: string | null }) {
 
     let cancelled = false;
 
+    // Reset Web Audio nodes so they're recreated against the new audio element
+    if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch { /* ok */ } sourceRef.current = null; }
+    if (audioCtxRef.current) { void audioCtxRef.current.close(); audioCtxRef.current = null; }
+    analyserRef.current = null;
+
     (async () => {
       try {
-        const res = await fetch(audioUrl);
-        const buf = await res.arrayBuffer();
-        const audioCtx = new AudioContext();
-        const decoded = await audioCtx.decodeAudioData(buf);
-        if (cancelled) return;
+        const res     = await fetch(audioUrl);
+        const buf     = await res.arrayBuffer();
+        const tmpCtx  = new AudioContext();
+        const decoded = await tmpCtx.decodeAudioData(buf);
+        if (cancelled) { await tmpCtx.close(); return; }
 
-        const data = decoded.getChannelData(0);
-        const { width, height } = canvas;
+        const data     = decoded.getChannelData(0);
         const barCount = 160;
-        const samplesPerBar = Math.floor(data.length / barCount);
 
-        ctx.clearRect(0, 0, width, height);
-
-        for (let i = 0; i < barCount; i++) {
-          let max = 0;
-          for (let j = 0; j < samplesPerBar; j++) {
-            max = Math.max(max, Math.abs(data[i * samplesPerBar + j] ?? 0));
+        const drawStatic = () => {
+          if (!canvasRef.current) return;
+          const cv = canvasRef.current;
+          const c  = cv.getContext("2d");
+          if (!c) return;
+          const { width, height } = cv;
+          const samplesPerBar = Math.floor(data.length / barCount);
+          c.clearRect(0, 0, width, height);
+          for (let i = 0; i < barCount; i++) {
+            let max = 0;
+            for (let j = 0; j < samplesPerBar; j++) {
+              max = Math.max(max, Math.abs(data[i * samplesPerBar + j] ?? 0));
+            }
+            const barH = Math.max(2, max * height * 0.88);
+            const x    = (i / barCount) * width;
+            const bw   = Math.max(1, width / barCount - 1.2);
+            const y    = (height - barH) / 2;
+            const grad = c.createLinearGradient(0, y, 0, y + barH);
+            grad.addColorStop(0,   "rgba(0,212,232,0.9)");
+            grad.addColorStop(0.5, "rgba(0,212,232,0.6)");
+            grad.addColorStop(1,   "rgba(124,58,237,0.7)");
+            c.fillStyle = grad;
+            c.beginPath();
+            c.roundRect(x, y, bw, barH, 1);
+            c.fill();
           }
-          const barH = Math.max(2, max * height * 0.88);
-          const x = (i / barCount) * width;
-          const bw = Math.max(1, width / barCount - 1.2);
-          const y = (height - barH) / 2;
+        };
 
-          const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-          grad.addColorStop(0, "rgba(0,212,232,0.9)");
-          grad.addColorStop(0.5, "rgba(0,212,232,0.6)");
-          grad.addColorStop(1, "rgba(124,58,237,0.7)");
-          ctx.fillStyle = grad;
-          ctx.beginPath();
-          ctx.roundRect(x, y, bw, barH, 1);
-          ctx.fill();
-        }
-
-        await audioCtx.close();
+        staticDrawFnRef.current = drawStatic;
+        drawStatic();
+        await tmpCtx.close();
       } catch {
-        // If decoding fails, draw an idle line
+        staticDrawFnRef.current = null;
         if (!cancelled && canvasRef.current) {
-          const ctx2 = canvasRef.current.getContext("2d");
-          ctx2?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          canvasRef.current.getContext("2d")?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
       }
     })();
 
     return () => { cancelled = true; };
   }, [audioUrl]);
+
+  // ── Live animation during playback ───────────────────────────────────────
+  useEffect(() => {
+    if (!playing || !audioRef?.current || !canvasRef.current) {
+      // Stop RAF and restore static frame
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+      staticDrawFnRef.current?.();
+      return;
+    }
+
+    // Create / resume AudioContext
+    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+    const audioCtx = audioCtxRef.current;
+    if (audioCtx.state === "suspended") void audioCtx.resume();
+
+    // Wire up MediaElementSource → Analyser → Destination (once per element)
+    if (!sourceRef.current) {
+      try {
+        sourceRef.current = audioCtx.createMediaElementSource(audioRef.current);
+        analyserRef.current = audioCtx.createAnalyser();
+        analyserRef.current.fftSize = 512;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        sourceRef.current.connect(analyserRef.current);
+        analyserRef.current.connect(audioCtx.destination);
+      } catch {
+        // createMediaElementSource throws if element already attached elsewhere
+        return;
+      }
+    }
+
+    const analyser    = analyserRef.current!;
+    const canvas      = canvasRef.current;
+    const draw        = canvas.getContext("2d")!;
+    const bufLen      = analyser.frequencyBinCount;
+    const dataArray   = new Uint8Array(bufLen);
+    const barCount    = 80;
+
+    const animate = () => {
+      rafRef.current = requestAnimationFrame(animate);
+      analyser.getByteFrequencyData(dataArray);
+      const { width, height } = canvas;
+      draw.clearRect(0, 0, width, height);
+      const barWidth = width / barCount - 1.5;
+      const step     = Math.floor(bufLen / barCount);
+      for (let i = 0; i < barCount; i++) {
+        let sum = 0;
+        for (let k = 0; k < step; k++) sum += dataArray[i * step + k] ?? 0;
+        const avg  = sum / step / 255;
+        const barH = Math.max(3, avg * height * 0.92);
+        const x    = i * (barWidth + 1.5);
+        const y    = (height - barH) / 2;
+        const grad = draw.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0,   `rgba(0,212,232,${(0.6 + avg * 0.4).toFixed(2)})`);
+        grad.addColorStop(0.5, `rgba(0,212,232,${(0.4 + avg * 0.3).toFixed(2)})`);
+        grad.addColorStop(1,   `rgba(124,58,237,${(0.5 + avg * 0.4).toFixed(2)})`);
+        draw.fillStyle = grad;
+        draw.beginPath();
+        draw.roundRect(x, y, barWidth, barH, 2);
+        draw.fill();
+      }
+    };
+    animate();
+
+    return () => {
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    };
+  }, [playing, audioRef]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      void audioCtxRef.current?.close();
+    };
+  }, []);
 
   if (!audioUrl) {
     return (
@@ -584,7 +683,7 @@ function AudioGeneratorSection() {
         <CardContent className="px-5 pb-5 space-y-4">
           {/* Waveform */}
           <div style={{ height: 120, overflow: "hidden" }}>
-            <WaveformCanvas audioUrl={audioUrl} />
+            <WaveformCanvas audioUrl={audioUrl} audioRef={audioRef} playing={playing} />
           </div>
 
           {/* Hidden audio element */}
@@ -2322,7 +2421,7 @@ function ConversationGeneratorSection() {
 
             {/* Waveform */}
             <div style={{ height: 120, overflow: "hidden" }}>
-              <WaveformCanvas audioUrl={audioUrl} />
+              <WaveformCanvas audioUrl={audioUrl} audioRef={audioRef} playing={playing} />
             </div>
 
             {audioUrl && (
@@ -2388,12 +2487,17 @@ const LAB_TABS = [
 type LabTabId = typeof LAB_TABS[number]["id"];
 
 function LabTabs() {
-  const [active, setActive] = useState<LabTabId>(() => {
+  const [active, setActive] = useState<LabTabId>("generator");
+
+  // Switch to Conversation tab if a prefill is waiting (set by "Use in TTS Lab")
+  // Must run in useEffect (client-only) — the lazy useState initializer runs
+  // during SSR where localStorage is unavailable, so we'd always get "generator".
+  useEffect(() => {
     try {
-      if (typeof window !== "undefined" && localStorage.getItem("tts-lab-prefill")) return "conversation";
+      if (localStorage.getItem("tts-lab-prefill")) setActive("conversation");
     } catch { /* ignore */ }
-    return "generator";
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div className="space-y-5">
       {/* Tab bar */}
