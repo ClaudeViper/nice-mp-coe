@@ -21,6 +21,7 @@ import {
   ExternalLink,
   LayoutGrid,
   LayoutList,
+  AlignJustify,
 } from "lucide-react";
 import { VendorLogo } from "@/components/vendor-logo";
 import { GlossaryTerm } from "@/components/glossary-term";
@@ -259,7 +260,7 @@ export default function VendorsPage() {
   const [showFilters,     setShowFilters]     = useState(false);
   const [deploymentFilter,setDeploymentFilter]= useState<string[]>([]);
   const [statusFilter,    setStatusFilter]    = useState<string[]>([]);
-  const [viewMode,        setViewMode]        = useState<"card" | "grid">("card");
+  const [viewMode,        setViewMode]        = useState<"card" | "grid" | "rows">("card");
 
   // aria-live region for dynamic result count
   const [announcement, setAnnouncement] = useState("");
@@ -534,6 +535,19 @@ export default function VendorsPage() {
           >
             <LayoutGrid className="h-4 w-4" aria-hidden="true" />
           </button>
+          <button
+            onClick={() => setViewMode("rows")}
+            title="Detail rows view"
+            aria-pressed={viewMode === "rows"}
+            className="px-3 py-2 transition-all"
+            style={
+              viewMode === "rows"
+                ? { background: "rgba(0,212,232,0.15)", color: "#00d4e8" }
+                : { background: "transparent", color: "var(--muted-foreground)" }
+            }
+          >
+            <AlignJustify className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -774,6 +788,119 @@ export default function VendorsPage() {
                     <ScoreBadge score={vendor.niceCompatibility.buildVsBuyScore} />
                   </div>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Vendor list — detail rows view */}
+      {!loading && filteredVendors.length > 0 && viewMode === "rows" && (
+        <div
+          id="vendor-grid"
+          role="region"
+          aria-labelledby={`tab-${activeTab}`}
+          className="flex flex-col divide-y"
+          style={{ borderRadius: "0.75rem", overflow: "hidden", border: "1px solid var(--border)" }}
+        >
+          {filteredVendors.map((vendor) => {
+            const categories  = getVendorCategories(vendor);
+            const deployments = getDeploymentTypes(vendor);
+            const topMetric   = getTopMetric(vendor, activeTab);
+            const aa          = getAA(vendor.slug);
+
+            return (
+              <div
+                key={vendor.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/vendors/${vendor.slug}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/vendors/${vendor.slug}`);
+                  }
+                }}
+                className="group flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors hover:bg-[rgba(0,212,232,0.04)] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
+                style={{ background: "var(--card)" }}
+                aria-label={`${vendor.name} vendor profile — ${categories.join(", ")}`}
+              >
+                {/* Logo */}
+                <div className="shrink-0">
+                  <VendorLogo name={vendor.name} slug={vendor.slug} size={36} />
+                </div>
+
+                {/* Name + location */}
+                <div className="w-40 shrink-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: "var(--foreground)" }}>
+                    {vendor.name}
+                  </p>
+                  {vendor.hqLocation && (
+                    <p className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>{vendor.hqLocation}</p>
+                  )}
+                </div>
+
+                {/* Categories + deployments */}
+                <div className="hidden sm:flex flex-wrap gap-1 flex-1 min-w-0">
+                  {categories.map((cat) => (
+                    <span
+                      key={cat}
+                      className="rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap"
+                      style={catColors[cat] ?? { background: "rgba(100,116,139,0.1)", color: "#94a3b8", border: "1px solid rgba(100,116,139,0.2)" }}
+                    >
+                      {cat}
+                    </span>
+                  ))}
+                  {deployments.map((d) => (
+                    <span
+                      key={d}
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] whitespace-nowrap"
+                      style={{ background: "rgba(0,0,0,0.04)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+                    >
+                      {d === "Cloud"  ? <Cloud  className="h-2.5 w-2.5" aria-hidden="true" /> : null}
+                      {d === "OnPrem" ? <Server className="h-2.5 w-2.5" aria-hidden="true" /> : null}
+                      {d}
+                    </span>
+                  ))}
+                </div>
+
+                {/* AA score */}
+                <div className="hidden md:flex shrink-0 items-center gap-1.5">
+                  {aa ? (
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                      style={{ background: "rgba(0,212,232,0.12)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }}
+                    >
+                      AA {aa.aa_quality_score}
+                    </span>
+                  ) : (
+                    <span className="text-xs w-14" style={{ color: "var(--muted-foreground)" }}>—</span>
+                  )}
+                </div>
+
+                {/* Top metric */}
+                <div className="hidden lg:flex shrink-0 w-36 items-center gap-1.5">
+                  {topMetric ? (
+                    <>
+                      <Activity className="h-3.5 w-3.5 shrink-0" style={{ color: "#00d4e8" }} aria-hidden="true" />
+                      <span className="text-xs truncate" style={{ color: "var(--muted-foreground)" }}>{topMetric.label}:</span>
+                      <span className="text-sm font-semibold shrink-0" style={{ color: "#00d4e8" }}>{topMetric.value}</span>
+                    </>
+                  ) : null}
+                </div>
+
+                {/* CXone status + Build vs Buy */}
+                <div className="hidden xl:flex shrink-0 items-center gap-2">
+                  {vendor.niceCompatibility ? (
+                    <>
+                      <StatusBadge status={vendor.niceCompatibility.cxoneIntegrationStatus} />
+                      <ScoreBadge score={vendor.niceCompatibility.buildVsBuyScore} />
+                    </>
+                  ) : null}
+                </div>
+
+                {/* Arrow */}
+                <ChevronRight className="ml-auto shrink-0 h-4 w-4 transition-colors" style={{ color: "var(--muted-foreground)" }} aria-hidden="true" />
               </div>
             );
           })}
