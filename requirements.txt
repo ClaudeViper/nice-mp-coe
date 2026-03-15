@@ -1,0 +1,19 @@
+# Core audio processing (required for all Python scripts)
+numpy>=1.24
+soundfile>=0.12
+tqdm>=4.66
+
+# STT evaluation metrics
+jiwer>=3.0
+
+# ── Optional TTS backends ─────────────────────────────────────────────────────
+# Uncomment ONE of the following blocks to enable real audio generation.
+# Without a backend the app still runs; audio generation returns an error.
+#
+# Option A — Kokoro (lightweight, CPU-friendly, ~400 MB)
+# kokoro>=0.10
+#
+# Option B — Chatterbox (higher quality, needs ~2 GB VRAM or slow on CPU)
+# chatterbox-tts>=0.1
+# torch>=2.1
+# torchaudio>=2.1

@@ -16,8 +16,12 @@ README*
 # Test artifacts
 coverage
 __tests__
+e2e
 
 # Editor / OS
 .DS_Store
 .vscode
 *.log
+
+# Local audio samples (use a Docker volume instead)
+audio_samples

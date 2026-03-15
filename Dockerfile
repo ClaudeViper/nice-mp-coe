@@ -1,7 +1,7 @@
-# ── Stage 1: install dependencies ────────────────────────────────────────────
+# ── Stage 1: install Node dependencies ───────────────────────────────────────
 FROM node:20-alpine AS deps
 
-# openssl is required by Prisma; libc6-compat for Alpine compatibility
+# openssl → Prisma TLS; libc6-compat → Alpine glibc shim
 RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
@@ -9,14 +9,14 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
-# Install all deps (including devDeps needed for build)
+# Install all deps (devDeps are needed for the build stage)
 RUN npm ci
 
-# Generate Prisma client (reads schema, no DB connection required)
+# Generate Prisma client — reads schema only, no DB connection required
 RUN npx prisma generate
 
 
-# ── Stage 2: build ────────────────────────────────────────────────────────────
+# ── Stage 2: Next.js build ────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 RUN apk add --no-cache openssl
@@ -35,7 +35,29 @@ RUN npm run build
 # ── Stage 3: production runner ────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache openssl
+# System packages:
+#   openssl        → Prisma TLS connections
+#   python3        → TTS / STT audio scripts (generate_audio.py, stt_evaluate.py, …)
+#   py3-pip        → install Python packages
+#   python3-dev    → headers needed to compile numpy / soundfile wheels
+#   ffmpeg         → audio conversion used by generate_conversation.py
+#   gcc/g++/musl   → compile C-extension wheels
+#   libsndfile-dev → soundfile backend
+RUN apk add --no-cache \
+      openssl \
+      python3 \
+      py3-pip \
+      python3-dev \
+      ffmpeg \
+      gcc \
+      g++ \
+      musl-dev \
+      libffi-dev \
+      libsndfile-dev
+
+# Python audio / ML packages (see requirements.txt)
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
 WORKDIR /app
 
@@ -44,26 +66,40 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Non-root user for security
 RUN addgroup --system --gid 1001 nodejs \
- && adduser  --system --uid 1001 nextjs
+ && adduser  --system --uid 1001 --home /home/nextjs nextjs \
+ && mkdir -p /home/nextjs/audio_samples \
+ && chown -R nextjs:nodejs /home/nextjs
 
-# Static assets
+# ── Next.js standalone output ─────────────────────────────────────────────────
 COPY --from=builder /app/public ./public
-
-# Standalone output (set by output: "standalone" in next.config.ts)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static   ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static    ./.next/static
 
-# Prisma client needed at runtime
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
+# ── Prisma client + schema ────────────────────────────────────────────────────
+COPY --from=deps    --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# ── Python scripts (TTS / STT) ────────────────────────────────────────────────
+COPY --from=builder --chown=nextjs:nodejs /app/generate_audio.py        ./
+COPY --from=builder --chown=nextjs:nodejs /app/batch_generate_audio.py  ./
+COPY --from=builder --chown=nextjs:nodejs /app/generate_conversation.py ./
+COPY --from=builder --chown=nextjs:nodejs /app/stt_evaluate.py          ./
+
+# ── Static benchmark data ─────────────────────────────────────────────────────
+COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 
 USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+# HOME is used by Python's Path("~").expanduser() in audio scripts
+ENV HOME=/home/nextjs
 
-# Runtime env vars — supply these via docker run -e or docker-compose:
-#   DATABASE_URL, DIRECT_URL, ANTHROPIC_API_KEY
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Required runtime env vars — pass via docker run -e or docker-compose env_file:
+#   DATABASE_URL      — PostgreSQL connection (Supabase pooler URL)
+#   DIRECT_URL        — PostgreSQL direct connection (for Prisma migrations)
+#   ANTHROPIC_API_KEY — Claude API key from console.anthropic.com
+# ─────────────────────────────────────────────────────────────────────────────
 CMD ["node", "server.js"]
