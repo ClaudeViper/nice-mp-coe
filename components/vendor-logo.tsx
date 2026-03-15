@@ -127,7 +127,16 @@ export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogo
         width={size}
         height={size}
         onError={advance}
-        style={{ width: size, height: size, objectFit: "contain" }}
+        style={{
+          width: size,
+          height: size,
+          objectFit: "contain",
+          // mix-blend-mode: screen makes pure-black pixels transparent against
+          // the dark card background, stripping baked-in black backgrounds
+          // (OpenAI, ElevenLabs, Deepgram, Cartesia, etc.) while leaving
+          // all coloured and white logo pixels fully intact.
+          mixBlendMode: "screen",
+        }}
       />
     </div>
   );
