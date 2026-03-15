@@ -13,6 +13,9 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Save,
+  CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -307,6 +310,14 @@ export default function TextGenerationPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Save to dataset state
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [datasets, setDatasets] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [selectedDataset, setSelectedDataset] = useState<string>("__new__");
+  const [newDatasetName, setNewDatasetName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null);
+
   // Load persisted params
   useEffect(() => {
     try {
@@ -388,6 +399,69 @@ export default function TextGenerationPage() {
   const useInTtsLab = () => {
     localStorage.setItem("tts-lab-prefill", rawConversation);
     router.push("/tts-audio-lab");
+  };
+
+  const openSavePanel = async () => {
+    setSaveOpen(true);
+    setSaveResult(null);
+    try {
+      const res = await fetch("/api/datasets?type=TTS");
+      if (res.ok) {
+        const data = await res.json();
+        setDatasets(data);
+      }
+    } catch {
+      // ignore — user can still create new
+    }
+  };
+
+  const saveToDataset = async () => {
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      let datasetId: string;
+
+      if (selectedDataset === "__new__") {
+        const name = newDatasetName.trim() || `Text Gen – ${params.topic} (${new Date().toLocaleDateString()})`;
+        const res = await fetch("/api/datasets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, type: "TTS", language: params.language }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        datasetId = created.id;
+      } else {
+        datasetId = selectedDataset;
+      }
+
+      const res = await fetch(`/api/datasets/${datasetId}/samples`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: rawConversation,
+          source: "text-generation",
+          metadata: {
+            topic: params.topic,
+            vertical: params.vertical,
+            sentiment: params.sentiment,
+            empathyLevel: params.empathyLevel,
+            callOutcome: params.callOutcome,
+            language: params.language,
+            complexity: params.complexity,
+            participants,
+            numCharacters: params.numCharacters,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      setSaveResult({ ok: true, message: "Conversation saved to dataset successfully." });
+    } catch (e) {
+      setSaveResult({ ok: false, message: String(e) });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -690,6 +764,15 @@ export default function TextGenerationPage() {
               </button>
               <button
                 type="button"
+                onClick={openSavePanel}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition hover:opacity-80"
+                style={{ background: "rgba(0,212,232,0.08)", border: "1px solid rgba(0,212,232,0.25)", color: "#00d4e8" }}
+              >
+                <Save className="h-3.5 w-3.5" />
+                Save to Dataset
+              </button>
+              <button
+                type="button"
                 onClick={useInTtsLab}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-80 ml-auto"
                 style={{ background: "linear-gradient(135deg, #00d4e8, #7c3aed)" }}
@@ -698,6 +781,92 @@ export default function TextGenerationPage() {
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
+
+            {/* Save to dataset panel */}
+            {saveOpen && (
+              <div
+                className="px-5 py-4 space-y-3"
+                style={{ borderTop: "1px solid var(--border)", background: "rgba(0,212,232,0.02)" }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                    Save to Dataset
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setSaveOpen(false); setSaveResult(null); }}
+                    className="rounded hover:opacity-60 transition"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Dataset selector */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                    Target dataset
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedDataset}
+                      onChange={(e) => setSelectedDataset(e.target.value)}
+                      className="w-full rounded-lg px-3 py-2 text-sm appearance-none focus:outline-none focus:ring-2 pr-8"
+                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                    >
+                      <option value="__new__">+ Create new dataset…</option>
+                      {datasets.map((d) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 pointer-events-none" style={{ color: "var(--muted-foreground)" }} />
+                  </div>
+                </div>
+
+                {selectedDataset === "__new__" && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium" style={{ color: "var(--muted-foreground)" }}>
+                      New dataset name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={newDatasetName}
+                      onChange={(e) => setNewDatasetName(e.target.value)}
+                      placeholder={`Text Gen – ${params.topic}`}
+                      className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                    />
+                  </div>
+                )}
+
+                {saveResult && (
+                  <div
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs"
+                    style={
+                      saveResult.ok
+                        ? { background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e" }
+                        : { background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }
+                    }
+                  >
+                    {saveResult.ok
+                      ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                      : <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />}
+                    {saveResult.message}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={saveToDataset}
+                  disabled={saving}
+                  className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50"
+                  style={{ background: "#00d4e8" }}
+                >
+                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  {saving ? "Saving…" : "Confirm Save"}
+                </button>
+              </div>
+            )}
           </section>
         )}
       </div>
