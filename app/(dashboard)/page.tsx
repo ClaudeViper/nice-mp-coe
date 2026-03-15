@@ -34,6 +34,7 @@ interface DashboardStats {
   totalBenchmarks: number;
   totalNews: number;
   totalEvaluations: number;
+  agentLastRuns: Record<string, string | null>;
   recentEvaluations: Array<{
     id: string;
     vendor: { name: string };
@@ -51,6 +52,16 @@ interface DashboardStats {
     metricUnit: string;
     benchmarkType: string;
   }>;
+}
+
+/** Formats an ISO timestamp as "Mar 15, 2026 · 14:32" */
+function fmtDateTime(iso: string): string {
+  const d = new Date(iso);
+  return (
+    d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) +
+    " · " +
+    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
 }
 
 const QUICK_LINKS = [
@@ -181,8 +192,11 @@ interface AgentState {
   toastMsg?: string;
 }
 
-function AgentCard({ agent }: { agent: AgentDef }) {
-  const [state, setState] = useState<AgentState>({ status: "idle" });
+function AgentCard({ agent, initialLastRun }: { agent: AgentDef; initialLastRun: string | null }) {
+  const [state, setState] = useState<AgentState>({
+    status: "idle",
+    lastRun: initialLastRun ?? undefined,
+  });
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -264,8 +278,9 @@ function AgentCard({ agent }: { agent: AgentDef }) {
             {state.status.charAt(0).toUpperCase() + state.status.slice(1)}
           </span>
           {state.lastRun && (
-            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-              Last run: {new Date(state.lastRun).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            <span className="inline-flex items-center gap-1 text-xs" style={{ color: "var(--muted-foreground)" }}>
+              <Clock className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+              {fmtDateTime(state.lastRun)}
             </span>
           )}
         </div>
@@ -472,7 +487,11 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {AGENTS.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} />
+            <AgentCard
+              key={agent.id}
+              agent={agent}
+              initialLastRun={stats?.agentLastRuns?.[agent.id] ?? null}
+            />
           ))}
         </div>
       </div>
