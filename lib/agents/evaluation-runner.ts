@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { createAnthropicClient } from "@/lib/anthropic-client";
 import { prisma } from "@/lib/prisma";
 import { BenchmarkType, Prisma } from "@prisma/client";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = createAnthropicClient();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
