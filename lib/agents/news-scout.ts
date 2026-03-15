@@ -97,6 +97,35 @@ export const NEWS_SOURCES: NewsSource[] = [
     frequency: "daily",
     keywords: ["speech", "audio", "voice"],
   },
+  // ── Artificial Analysis — benchmark leaderboards & model releases ─────────
+  {
+    name: "Artificial Analysis — STT Leaderboard",
+    method: "web_scrape",
+    url: "https://artificialanalysis.ai/speech-to-text",
+    frequency: "6h",
+    keywords: "all",
+  },
+  {
+    name: "Artificial Analysis — TTS Models",
+    method: "web_scrape",
+    url: "https://artificialanalysis.ai/text-to-speech/models",
+    frequency: "6h",
+    keywords: "all",
+  },
+  {
+    name: "Artificial Analysis — Speech-to-Speech",
+    method: "web_scrape",
+    url: "https://artificialanalysis.ai/models/speech-to-speech",
+    frequency: "6h",
+    keywords: "all",
+  },
+  {
+    name: "Artificial Analysis — Main",
+    method: "web_scrape",
+    url: "https://artificialanalysis.ai/",
+    frequency: "daily",
+    keywords: ["speech", "audio", "STT", "TTS", "voice", "benchmark", "leaderboard"],
+  },
 ];
 
 // ─── Types ───────────────────────────────────────────────────────────────────

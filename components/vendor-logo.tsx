@@ -2,296 +2,141 @@
 
 import { useState } from "react";
 
-// ─── Logo registry ────────────────────────────────────────────────────────────
-// Maps slug fragments → { url, fallbackUrl, bg color for the container, padding in px }
-// Slugs are matched by checking if the vendor slug *contains* the key.
+// ─── Vendor domain registry ────────────────────────────────────────────────────
+// Maps slug fragments → domain + styling.
+// Logo URL chain: Clearbit (128px PNG) → DuckDuckGo favicon → letter-avatar.
 
-interface LogoEntry {
-  url: string;
-  /** Second URL tried if the primary fails (before letter-avatar fallback) */
-  fallbackUrl?: string;
+interface VendorEntry {
+  /** Primary domain for Clearbit & DDG favicon lookup */
+  domain: string;
+  /** Background color for the logo container */
   bg: string;
-  /** Inset padding so the img doesn't touch the container edge (px) */
+  /** Brand accent color used in letter-avatar fallback */
+  color: string;
+  /** Inner padding (px) so the logo doesn't touch the container edge */
   pad: number;
 }
 
-const LOGO_MAP: Record<string, LogoEntry> = {
-  // OpenAI / Whisper
-  openai: {
-    url: "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg",
-    bg: "#ffffff",
-    pad: 6,
-  },
-  // Google — use Google's own static asset, Clearbit as fallback
-  google: {
-    url: "https://ssl.gstatic.com/images/branding/product/2x/googleg_standard_color_48dp.png",
-    fallbackUrl: "https://logo.clearbit.com/google.com",
-    bg: "#ffffff",
-    pad: 5,
-  },
-  // Amazon / AWS
-  amazon: {
-    url: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png",
-    bg: "#232f3e",
-    pad: 4,
-  },
-  aws: {
-    url: "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png",
-    bg: "#232f3e",
-    pad: 4,
-  },
-  // Microsoft / Azure
-  microsoft: {
-    url: "https://upload.wikimedia.org/wikipedia/commons/a/a8/Microsoft_Azure_Logo.svg",
-    bg: "#ffffff",
-    pad: 4,
-  },
-  azure: {
-    url: "https://upload.wikimedia.org/wikipedia/commons/a/a8/Microsoft_Azure_Logo.svg",
-    bg: "#ffffff",
-    pad: 4,
-  },
-  // AssemblyAI
-  assemblyai: {
-    url: "https://www.assemblyai.com/favicon.ico",
-    bg: "#1ED3B4",
-    pad: 7,
-  },
-  // Deepgram
-  deepgram: {
-    url: "https://deepgram.com/favicon.ico",
-    bg: "#101014",
-    pad: 7,
-  },
-  // Rev AI
-  "rev-ai": {
-    url: "https://www.rev.com/favicon.ico",
-    bg: "#0070f3",
-    pad: 7,
-  },
-  rev: {
-    url: "https://www.rev.com/favicon.ico",
-    bg: "#0070f3",
-    pad: 7,
-  },
-  // Speechmatics
-  speechmatics: {
-    url: "https://www.speechmatics.com/favicon.ico",
-    bg: "#1e293b",
-    pad: 7,
-  },
-  // ElevenLabs
-  elevenlabs: {
-    url: "https://elevenlabs.io/favicon.ico",
-    bg: "#000000",
-    pad: 7,
-  },
-  // Resemble AI
-  resemble: {
-    url: "https://www.resemble.ai/favicon.ico",
-    bg: "#5046e5",
-    pad: 7,
-  },
-  // PlayHT
-  playht: {
-    url: "https://play.ht/favicon.ico",
-    bg: "#6d28d9",
-    pad: 7,
-  },
-  // Cartesia
-  cartesia: {
-    url: "https://cartesia.ai/favicon.ico",
-    bg: "#0a0a0a",
-    pad: 7,
-  },
-  // Hume AI
-  hume: {
-    url: "https://www.hume.ai/favicon.ico",
-    bg: "#1a1a2e",
-    pad: 7,
-  },
-  // Tavus
-  tavus: {
-    url: "https://www.tavus.io/favicon.ico",
-    bg: "#0f172a",
-    pad: 7,
-  },
-  // Runway
-  runway: {
-    url: "https://runwayml.com/favicon.ico",
-    bg: "#000000",
-    pad: 7,
-  },
-  // Coqui (company is shut down; Clearbit won't have it — use letter avatar only)
-  coqui: {
-    url: "https://logo.clearbit.com/coqui.ai",
-    bg: "#1a1a1a",
-    pad: 6,
-  },
-  // Meta — use Meta's own static asset, Clearbit as fallback
-  meta: {
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/800px-Meta_Platforms_Inc._logo.svg.png",
-    fallbackUrl: "https://logo.clearbit.com/meta.com",
-    bg: "#ffffff",
-    pad: 4,
-  },
-  // NVIDIA — use SVG from Wikimedia, Clearbit as fallback
-  nvidia: {
-    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Nvidia_logo.svg/800px-Nvidia_logo.svg.png",
-    fallbackUrl: "https://logo.clearbit.com/nvidia.com",
-    bg: "#000000",
-    pad: 5,
-  },
-  // VAPI — direct favicon from their site, Clearbit as fallback
-  vapi: {
-    url: "https://vapi.ai/favicon.ico",
-    fallbackUrl: "https://logo.clearbit.com/vapi.ai",
-    bg: "#0f0f1a",
-    pad: 6,
-  },
-  // Retell AI — direct favicon, Clearbit as fallback
-  retell: {
-    url: "https://www.retellai.com/favicon.ico",
-    fallbackUrl: "https://logo.clearbit.com/retellai.com",
-    bg: "#0f172a",
-    pad: 6,
-  },
-  retellai: {
-    url: "https://www.retellai.com/favicon.ico",
-    fallbackUrl: "https://logo.clearbit.com/retellai.com",
-    bg: "#0f172a",
-    pad: 6,
-  },
+const VENDOR_MAP: Record<string, VendorEntry> = {
+  openai:        { domain: "openai.com",          bg: "#000000", color: "#10a37f", pad: 6 },
+  google:        { domain: "google.com",           bg: "#ffffff", color: "#4285F4", pad: 5 },
+  amazon:        { domain: "amazon.com",           bg: "#232f3e", color: "#ff9900", pad: 4 },
+  aws:           { domain: "amazon.com",           bg: "#232f3e", color: "#ff9900", pad: 4 },
+  microsoft:     { domain: "microsoft.com",        bg: "#ffffff", color: "#00a4ef", pad: 4 },
+  azure:         { domain: "microsoft.com",        bg: "#ffffff", color: "#00a4ef", pad: 4 },
+  assemblyai:    { domain: "assemblyai.com",       bg: "#1ED3B4", color: "#000000", pad: 7 },
+  deepgram:      { domain: "deepgram.com",         bg: "#101014", color: "#13ef95", pad: 7 },
+  rev:           { domain: "rev.com",              bg: "#0070f3", color: "#ffffff", pad: 7 },
+  "rev-ai":      { domain: "rev.com",              bg: "#0070f3", color: "#ffffff", pad: 7 },
+  speechmatics:  { domain: "speechmatics.com",     bg: "#1e293b", color: "#2563eb", pad: 7 },
+  elevenlabs:    { domain: "elevenlabs.io",         bg: "#000000", color: "#ffffff", pad: 7 },
+  resemble:      { domain: "resemble.ai",          bg: "#5046e5", color: "#ffffff", pad: 7 },
+  playht:        { domain: "play.ht",              bg: "#6d28d9", color: "#ffffff", pad: 7 },
+  cartesia:      { domain: "cartesia.ai",          bg: "#0a0a0a", color: "#6366f1", pad: 7 },
+  hume:          { domain: "hume.ai",              bg: "#1a1a2e", color: "#4f46e5", pad: 7 },
+  tavus:         { domain: "tavus.io",             bg: "#0f172a", color: "#d946ef", pad: 7 },
+  runway:        { domain: "runwayml.com",         bg: "#000000", color: "#666666", pad: 7 },
+  // Requested vendors
+  coqui:         { domain: "coqui.ai",             bg: "#1a1a1a", color: "#FBBF24", pad: 6 },
+  meta:          { domain: "meta.com",             bg: "#ffffff", color: "#0082FB", pad: 5 },
+  nvidia:        { domain: "nvidia.com",           bg: "#000000", color: "#76B900", pad: 5 },
+  vapi:          { domain: "vapi.ai",              bg: "#0f0f1a", color: "#7C3AED", pad: 6 },
+  retell:        { domain: "retellai.com",         bg: "#0f172a", color: "#EC4899", pad: 6 },
+  retellai:      { domain: "retellai.com",         bg: "#0f172a", color: "#EC4899", pad: 6 },
 };
 
-/** Brand accent colors used in the fallback letter-avatar */
-const BRAND_COLORS: Record<string, string> = {
-  openai:       "#10a37f",
-  google:       "#4285f4",
-  amazon:       "#ff9900",
-  aws:          "#ff9900",
-  microsoft:    "#00a4ef",
-  azure:        "#00a4ef",
-  assemblyai:   "#1ED3B4",
-  deepgram:     "#13ef95",
-  rev:          "#0070f3",
-  "rev-ai":     "#0070f3",
-  speechmatics: "#2563eb",
-  elevenlabs:   "#3b3b3b",
-  resemble:     "#5046e5",
-  playht:       "#6d28d9",
-  cartesia:     "#6366f1",
-  hume:         "#4f46e5",
-  tavus:        "#0f172a",
-  runway:       "#333333",
-  coqui:        "#FBBF24",
-  meta:         "#0082FB",
-  nvidia:       "#76B900",
-  vapi:         "#7C3AED",
-  retell:       "#EC4899",
-  retellai:     "#EC4899",
-};
-
-function resolveEntry(slug: string): LogoEntry | undefined {
-  // Exact match first
-  if (LOGO_MAP[slug]) return LOGO_MAP[slug];
-  // Partial match: check if slug contains a known key
-  for (const key of Object.keys(LOGO_MAP)) {
-    if (slug.includes(key) || key.includes(slug)) return LOGO_MAP[key];
+function resolveEntry(slug: string): VendorEntry | undefined {
+  const s = slug.toLowerCase();
+  // Exact match
+  if (VENDOR_MAP[s]) return VENDOR_MAP[s];
+  // Prefix/substring match
+  for (const key of Object.keys(VENDOR_MAP)) {
+    if (s.includes(key) || key.includes(s.split("-")[0]!)) return VENDOR_MAP[key];
   }
   return undefined;
-}
-
-function resolveBrandColor(slug: string): string {
-  if (BRAND_COLORS[slug]) return BRAND_COLORS[slug];
-  for (const key of Object.keys(BRAND_COLORS)) {
-    if (slug.includes(key) || key.includes(slug)) return BRAND_COLORS[key]!;
-  }
-  return "#00d4e8"; // NICE cyan default
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface VendorLogoProps {
-  /** Vendor display name, used for alt text and fallback initial */
   name: string;
-  /** Vendor slug from database (e.g. "openai", "amazon-web-services") */
   slug: string;
-  /** Container size in px (default 44) */
   size?: number;
   className?: string;
 }
 
+type Stage = "clearbit" | "ddg" | "avatar";
+
 /**
- * Renders the official vendor logo inside a consistently-sized rounded container.
- * Tries primary URL → fallbackUrl → colored letter-avatar.
+ * Vendor logo with 3-stage fallback:
+ *   1. Clearbit (https://logo.clearbit.com/{domain}) — 128px PNG
+ *   2. DuckDuckGo favicon (https://icons.duckduckgo.com/ip3/{domain}.ico)
+ *   3. Branded letter-avatar with exact vendor color
  */
 export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogoProps) {
-  // 0 = try primary, 1 = try fallback, 2 = letter avatar
-  const [imgStage, setImgStage] = useState<0 | 1 | 2>(0);
+  const [stage, setStage] = useState<Stage>("clearbit");
 
-  const entry     = resolveEntry(slug.toLowerCase());
-  const bgColor   = entry?.bg ?? resolveBrandColor(slug.toLowerCase());
-  const showImg   = !!entry && imgStage < 2;
+  const entry     = resolveEntry(slug);
+  const brandColor = entry?.color ?? "#00d4e8";
+  const bgColor    = entry?.bg    ?? "#0f172a";
 
-  const handleError = () => {
-    if (imgStage === 0 && entry?.fallbackUrl) {
-      setImgStage(1); // try fallback URL
-    } else {
-      setImgStage(2); // show letter avatar
-    }
-  };
-
-  const imgSrc = imgStage === 1 ? entry?.fallbackUrl : entry?.url;
+  const advance = () =>
+    setStage((s) => (s === "clearbit" ? "ddg" : "avatar"));
 
   const baseStyle: React.CSSProperties = {
-    width:     size,
-    height:    size,
-    minWidth:  size,
-    minHeight: size,
+    width: size, height: size, minWidth: size, minHeight: size,
     borderRadius: 8,
     overflow: "hidden",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: bgColor,
     flexShrink: 0,
+    background: bgColor,
   };
 
-  if (showImg && imgSrc) {
-    const inner = size - (entry!.pad ?? 0) * 2;
+  // ── No entry → letter avatar straight away ───────────────────────────────
+  if (!entry || stage === "avatar") {
     return (
-      <div style={baseStyle} className={className}>
-        <img
-          src={imgSrc}
-          alt={`${name} logo`}
-          loading="lazy"
-          width={inner}
-          height={inner}
-          onError={handleError}
-          style={{ width: inner, height: inner, objectFit: "contain" }}
-        />
+      <div
+        style={{
+          ...baseStyle,
+          background: `linear-gradient(135deg, ${brandColor}33 0%, ${brandColor}11 100%)`,
+          border: `1.5px solid ${brandColor}44`,
+          color: brandColor,
+          fontWeight: 700,
+          fontSize: Math.round(size * 0.4),
+          letterSpacing: "-0.02em",
+          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+        }}
+        className={className}
+        aria-label={`${name} logo`}
+        role="img"
+      >
+        {name.charAt(0).toUpperCase()}
       </div>
     );
   }
 
-  // Final fallback: branded letter-avatar
-  const brandColor = resolveBrandColor(slug.toLowerCase());
+  // ── Image stages (Clearbit or DDG) ───────────────────────────────────────
+  const src =
+    stage === "clearbit"
+      ? `https://logo.clearbit.com/${entry.domain}`
+      : `https://icons.duckduckgo.com/ip3/${entry.domain}.ico`;
+
+  const inner = size - entry.pad * 2;
+
   return (
-    <div
-      style={{
-        ...baseStyle,
-        background: `linear-gradient(135deg, ${brandColor}, #7c3aed)`,
-        color: "#ffffff",
-        fontWeight: 700,
-        fontSize: Math.round(size * 0.38),
-        letterSpacing: "-0.02em",
-      }}
-      className={className}
-      aria-label={`${name} logo`}
-      role="img"
-    >
-      {name.charAt(0).toUpperCase()}
+    <div style={baseStyle} className={className}>
+      <img
+        key={src}          /* force new element when src changes */
+        src={src}
+        alt={`${name} logo`}
+        loading="lazy"
+        width={inner}
+        height={inner}
+        onError={advance}
+        style={{ width: inner, height: inner, objectFit: "contain" }}
+      />
     </div>
   );
 }

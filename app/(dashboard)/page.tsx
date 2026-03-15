@@ -133,7 +133,7 @@ const AGENTS: AgentDef[] = [
   {
     id: "news-digest",
     name: "News Digest",
-    description: "Scans industry sources for announcements, model releases, and market intelligence.",
+    description: "Scans Artificial Analysis, HuggingFace, vendor blogs, and research feeds for benchmark updates and model releases.",
     category: "Intelligence",
     categoryColor: "#10b981",
     icon: Newspaper,
