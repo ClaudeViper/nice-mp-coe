@@ -611,7 +611,7 @@ export default function VendorsPage() {
           id="vendor-grid"
           role="region"
           aria-labelledby={`tab-${activeTab}`}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
         >
           {filteredVendors.map((vendor) => {
             const categories  = getVendorCategories(vendor);
