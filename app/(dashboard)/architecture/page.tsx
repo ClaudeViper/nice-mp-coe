@@ -247,9 +247,9 @@ function SectionTitle({ icon: Icon, label, color }: { icon: React.ElementType; l
       <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}18`, border: `1px solid ${color}35`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         <Icon style={{ width: 14, height: 14, color }} />
       </div>
-      {/* ← dark muted heading, not white */}
-      <h2 className="text-sm font-bold uppercase tracking-widest" style={{ color: H2, letterSpacing: "0.08em" }}>{label}</h2>
-      <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+      {/* uses the section accent color — visually distinct, never white */}
+      <h2 className="text-base font-bold" style={{ color }}>{label}</h2>
+      <div className="flex-1 h-px" style={{ background: `${color}20` }} />
     </div>
   );
 }
@@ -334,87 +334,186 @@ function DetailBlock({ label, color, items }: { label: string; color: string; it
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SYSTEM ARCHITECTURE SVG DIAGRAM
+   REAL SVG ARCHITECTURE DIAGRAM
+   Five layered boxes connected by labelled SVG arrows.
+   Each agent gets its own coloured sub-node inside the orchestrator.
 ═══════════════════════════════════════════════════════════════════ */
 
 function ArchDiagram() {
-  const layers = [
-    { label: "BROWSER / CLIENT", color: "#00d4e8", items: ["Next.js 15  •  React 19", "TailwindCSS 4  •  Radix UI", "Recharts  •  Lucide Icons"] },
-    { label: "NEXT.JS API LAYER", color: "#a78bfa", items: ["30+ REST Endpoints", "/api/agents  /api/vendors  /api/evaluations", "/api/tts  /api/stt  /api/reports"] },
-    { label: "AGENT ORCHESTRATOR", color: "#fbbf24", items: ["Benchmark Collector  •  Vendor Registry", "Evaluation Runner  •  Report Generator", "News Scout  •  Deployment Guidelines"] },
-  ];
-  const bottom = [
-    { label: "ANTHROPIC CLAUDE API", color: "#f87171", items: ["Claude Opus 4-6", "Claude Sonnet 4-6", "web_search_20250305"] },
-    { label: "POSTGRESQL + PRISMA 7", color: "#34d399", items: ["Vendors  •  Benchmarks", "Evaluations  •  News", "Reports  •  Datasets"] },
-  ];
+  const agentCols  = ["#00d4e8","#a78bfa","#fbbf24","#34d399","#f87171","#818cf8"];
+  const agentNames = ["Benchmark\nCollector","Vendor\nRegistry","Eval\nRunner","Report\nGenerator","News\nScout","Deploy\nGuide"];
+  const agentModels= ["Opus 4-6","Sonnet 4-6","Sonnet 4-6","Sonnet 4-6","Sonnet 4-6","Opus 4-6"];
 
   return (
-    <div style={{ background: "#0f1219", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "28px 24px", fontFamily: "var(--font-mono, monospace)" }}>
-      {/* Top 3 layers stacked vertically */}
-      <div className="space-y-0">
-        {layers.map((layer, i) => (
-          <div key={i}>
-            <div className="rounded-xl px-5 py-4" style={{ background: "#161b27", border: `1px solid ${layer.color}30` }}>
-              <p className="text-xs font-bold tracking-widest mb-2" style={{ color: layer.color }}>{layer.label}</p>
-              <div className="space-y-0.5">
-                {layer.items.map(item => <p key={item} className="text-xs" style={{ color: DIM }}>{item}</p>)}
-              </div>
-            </div>
-            {i < layers.length - 1 && (
-              <div className="flex justify-center py-1">
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                  <div style={{ width: 1, height: 12, background: "rgba(255,255,255,0.12)" }} />
-                  <ArrowDown style={{ width: 12, height: 12, color: "rgba(255,255,255,0.2)" }} />
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+    <div style={{ background: "#080b11", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+      <svg
+        viewBox="0 0 1000 575"
+        style={{ width: "100%", height: "auto", display: "block" }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          {/* Arrowhead markers, one per connection color */}
+          {[
+            ["ah-purple","#a78bfa"],
+            ["ah-yellow","#fbbf24"],
+            ["ah-red",   "#f87171"],
+            ["ah-green", "#34d399"],
+          ].map(([id, fill]) => (
+            <marker key={id} id={id} markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+              <polygon points="0 0 7 3.5 0 7" fill={fill} opacity="0.75" />
+            </marker>
+          ))}
+        </defs>
 
-      {/* Splits into two branches */}
-      <div className="flex justify-center py-1">
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-          <div style={{ width: 1, height: 12, background: "rgba(255,255,255,0.12)" }} />
-          <ArrowDown style={{ width: 12, height: 12, color: "rgba(255,255,255,0.2)" }} />
-        </div>
-      </div>
+        {/* ── Layer 1: BROWSER / CLIENT ─────────────────────────────── */}
+        <rect x="175" y="12" width="650" height="74" rx="10"
+          fill="#0d1320" stroke="#00d4e840" strokeWidth="1.5" />
+        <rect x="175" y="12" width="650" height="4" rx="2" fill="#00d4e8" />
+        <text x="500" y="38" textAnchor="middle"
+          fill="#00d4e8" fontSize="11.5" fontWeight="bold" fontFamily="monospace" letterSpacing="2">
+          BROWSER / CLIENT
+        </text>
+        <text x="500" y="60" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          Next.js 15 · React 19 · TailwindCSS 4 · Radix UI · Recharts · TypeScript 5
+        </text>
 
-      {/* Fork line */}
-      <div style={{ position: "relative", height: 1, background: "rgba(255,255,255,0.08)", margin: "0 20%" }} />
+        {/* connector 1 — HTTP/REST */}
+        <line x1="500" y1="86" x2="500" y2="154" stroke="#a78bfa55" strokeWidth="1.5" strokeDasharray="5 3" markerEnd="url(#ah-purple)" />
+        <rect x="423" y="107" width="154" height="16" rx="3" fill="#080b11" />
+        <text x="500" y="119" textAnchor="middle"
+          fill="#a78bfa80" fontSize="8.5" fontFamily="monospace">HTTP / REST</text>
 
-      <div className="flex justify-between py-1 px-8 mb-1">
-        {bottom.map((_, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-            <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.12)" }} />
-            <ArrowDown style={{ width: 12, height: 12, color: "rgba(255,255,255,0.2)" }} />
-          </div>
-        ))}
-      </div>
+        {/* ── Layer 2: NEXT.JS API LAYER ────────────────────────────── */}
+        <rect x="175" y="156" width="650" height="74" rx="10"
+          fill="#0d1320" stroke="#a78bfa40" strokeWidth="1.5" />
+        <rect x="175" y="156" width="650" height="4" rx="2" fill="#a78bfa" />
+        <text x="500" y="183" textAnchor="middle"
+          fill="#a78bfa" fontSize="11.5" fontWeight="bold" fontFamily="monospace" letterSpacing="2">
+          NEXT.JS API LAYER
+        </text>
+        <text x="500" y="205" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          /api/agents · /api/vendors · /api/evaluations · /api/tts · /api/reports  (30+ routes)
+        </text>
 
-      {/* Bottom 2 boxes side by side */}
-      <div className="grid grid-cols-2 gap-4">
-        {bottom.map((layer) => (
-          <div key={layer.label} className="rounded-xl px-5 py-4" style={{ background: "#161b27", border: `1px solid ${layer.color}30` }}>
-            <p className="text-xs font-bold tracking-widest mb-2" style={{ color: layer.color }}>{layer.label}</p>
-            <div className="space-y-0.5">
-              {layer.items.map(item => <p key={item} className="text-xs" style={{ color: DIM }}>{item}</p>)}
-            </div>
-          </div>
-        ))}
-      </div>
+        {/* connector 2 — function call */}
+        <line x1="500" y1="230" x2="500" y2="298" stroke="#fbbf2455" strokeWidth="1.5" strokeDasharray="5 3" markerEnd="url(#ah-yellow)" />
+        <rect x="406" y="252" width="188" height="16" rx="3" fill="#080b11" />
+        <text x="500" y="264" textAnchor="middle"
+          fill="#fbbf2480" fontSize="8.5" fontFamily="monospace">Agent function call</text>
+
+        {/* ── Layer 3: AGENT ORCHESTRATOR ──────────────────────────── */}
+        <rect x="35" y="300" width="930" height="102" rx="10"
+          fill="#0d1320" stroke="#fbbf2440" strokeWidth="1.5" />
+        <rect x="35" y="300" width="930" height="4" rx="2" fill="#fbbf24" />
+        <text x="500" y="325" textAnchor="middle"
+          fill="#fbbf24" fontSize="11.5" fontWeight="bold" fontFamily="monospace" letterSpacing="2">
+          AGENT ORCHESTRATOR
+        </text>
+
+        {/* 6 agent sub-nodes */}
+        {agentNames.map((name, i) => {
+          const boxW = 134;
+          const gap  = 18;
+          const totalW = 6 * boxW + 5 * gap;
+          const startX = (1000 - totalW) / 2;
+          const bx = startX + i * (boxW + gap);
+          const lines = name.split("\n");
+          return (
+            <g key={name}>
+              <rect x={bx} y="337" width={boxW} height="52" rx="7"
+                fill={`${agentCols[i]}14`} stroke={`${agentCols[i]}50`} strokeWidth="1" />
+              <text x={bx + boxW / 2} y={lines.length === 2 ? "356" : "364"}
+                textAnchor="middle" fill={agentCols[i]}
+                fontSize="8.5" fontWeight="bold" fontFamily="monospace">
+                {lines[0]}
+              </text>
+              {lines[1] && (
+                <text x={bx + boxW / 2} y="368" textAnchor="middle" fill={agentCols[i]}
+                  fontSize="8.5" fontWeight="bold" fontFamily="monospace">
+                  {lines[1]}
+                </text>
+              )}
+              <text x={bx + boxW / 2} y="381" textAnchor="middle"
+                fill="#3a4f6a" fontSize="7.5" fontFamily="monospace">
+                {agentModels[i]}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* connector 3 — Anthropic SDK (curve left) */}
+        <path d="M 370 402 C 370 435 240 435 240 452"
+          stroke="#f8717160" strokeWidth="1.5" fill="none" strokeDasharray="5 3"
+          markerEnd="url(#ah-red)" />
+        <rect x="272" y="420" width="148" height="16" rx="3" fill="#080b11" />
+        <text x="346" y="432" textAnchor="middle"
+          fill="#f8717180" fontSize="8.5" fontFamily="monospace">Anthropic SDK</text>
+
+        {/* connector 4 — Prisma ORM (curve right) */}
+        <path d="M 630 402 C 630 435 760 435 760 452"
+          stroke="#34d39960" strokeWidth="1.5" fill="none" strokeDasharray="5 3"
+          markerEnd="url(#ah-green)" />
+        <rect x="578" y="420" width="148" height="16" rx="3" fill="#080b11" />
+        <text x="652" y="432" textAnchor="middle"
+          fill="#34d39980" fontSize="8.5" fontFamily="monospace">Prisma ORM</text>
+
+        {/* ── Layer 4a: ANTHROPIC CLAUDE API ───────────────────────── */}
+        <rect x="18" y="454" width="444" height="90" rx="10"
+          fill="#0d1320" stroke="#f8717135" strokeWidth="1.5" />
+        <rect x="18" y="454" width="444" height="4" rx="2" fill="#f87171" />
+        <text x="240" y="481" textAnchor="middle"
+          fill="#f87171" fontSize="11" fontWeight="bold" fontFamily="monospace" letterSpacing="1.5">
+          ANTHROPIC CLAUDE API
+        </text>
+        <text x="240" y="502" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          claude-opus-4-6 · claude-sonnet-4-6
+        </text>
+        <text x="240" y="520" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          web_search_20250305 · Native Tool Use
+        </text>
+
+        {/* ── Layer 4b: POSTGRESQL + PRISMA ────────────────────────── */}
+        <rect x="538" y="454" width="444" height="90" rx="10"
+          fill="#0d1320" stroke="#34d39935" strokeWidth="1.5" />
+        <rect x="538" y="454" width="444" height="4" rx="2" fill="#34d399" />
+        <text x="760" y="481" textAnchor="middle"
+          fill="#34d399" fontSize="11" fontWeight="bold" fontFamily="monospace" letterSpacing="1.5">
+          POSTGRESQL + PRISMA 7
+        </text>
+        <text x="760" y="502" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          Vendors · BenchmarkResults · Evaluations
+        </text>
+        <text x="760" y="520" textAnchor="middle"
+          fill="#3a4f6a" fontSize="9.5" fontFamily="monospace">
+          NewsItems · Reports · DeploymentGuidelines
+        </text>
+      </svg>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        <span className="text-xs" style={{ color: DIM }}>Legend:</span>
-        <div className="flex items-center gap-1 text-xs" style={{ color: DIM }}>
-          <div style={{ width: 16, height: 1, background: "rgba(255,255,255,0.25)" }} />HTTP / REST
-        </div>
-        <div className="flex items-center gap-1 text-xs" style={{ color: DIM }}>
-          <div style={{ width: 16, height: 1, background: "rgba(255,255,255,0.25)" }} />Anthropic SDK
-        </div>
-        <div className="flex items-center gap-1 text-xs" style={{ color: DIM }}>
-          <div style={{ width: 16, height: 1, background: "rgba(255,255,255,0.25)" }} />Prisma ORM
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, padding: "10px 20px 14px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        {[
+          { c: "#00d4e8", l: "Browser / Client" },
+          { c: "#a78bfa", l: "API Layer" },
+          { c: "#fbbf24", l: "Agent Orchestrator" },
+          { c: "#f87171", l: "Claude API" },
+          { c: "#34d399", l: "PostgreSQL" },
+        ].map(x => (
+          <div key={x.l} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: x.c }} />
+            <span style={{ fontSize: 10, color: "#3a4f6a", fontFamily: "monospace" }}>{x.l}</span>
+          </div>
+        ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="22" height="8" viewBox="0 0 22 8">
+            <line x1="0" y1="4" x2="18" y2="4" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeDasharray="4 2" />
+            <polygon points="16 1 22 4 16 7" fill="rgba(255,255,255,0.25)" />
+          </svg>
+          <span style={{ fontSize: 10, color: "#3a4f6a", fontFamily: "monospace" }}>Data flow</span>
         </div>
       </div>
     </div>
