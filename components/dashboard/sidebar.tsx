@@ -18,6 +18,7 @@ import {
   Zap,
   Database,
   AudioWaveform as Waveform,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ const navigation = [
   { name: "Datasets", href: "/datasets", icon: Database },
   { name: "Standards", href: "/standards", icon: BookCheck },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Architecture", href: "/architecture", icon: Network },
 ];
 
 export function Sidebar() {

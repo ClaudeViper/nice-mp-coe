@@ -16,6 +16,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/standards": "Standards",
   "/reports": "Reports",
   "/tts-audio-lab": "TTS Audio Lab",
+  "/architecture": "Architecture",
 };
 
 function getLabel(pathname: string): string {
@@ -92,12 +93,12 @@ export function Topbar() {
 
         {/* User avatar */}
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white"
           style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}
           role="img"
-          aria-label="User: NICE Admin"
+          aria-label="User: AH"
         >
-          N
+          AH
         </div>
       </div>
     </header>
