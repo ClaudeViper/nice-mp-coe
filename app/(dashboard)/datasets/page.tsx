@@ -238,7 +238,7 @@ function SampleRow({
           <td className="px-3 py-2 text-xs max-w-md" style={{ color: "var(--foreground)" }}>
             <div className="line-clamp-2" title={s.text as string}>{s.text as string}</div>
           </td>
-          <td className="px-3 py-2 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{(s.expectedDuration as number).toFixed(1)}s</td>
+          <td className="px-3 py-2 text-xs whitespace-nowrap" style={{ color: "var(--muted-foreground)" }}>{s.expectedDuration != null ? `${(s.expectedDuration as number).toFixed(1)}s` : "—"}</td>
           <td className="px-3 py-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
             <span className="rounded-full px-2 py-0.5" style={{ background: "rgba(0,212,232,0.08)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.2)" }}>{s.category as string}</span>
           </td>

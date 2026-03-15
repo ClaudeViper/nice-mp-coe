@@ -50,6 +50,9 @@ const VOICES = [
 
 const FORMATS = ["wav", "mp3"] as const;
 
+// ─── TTS engine metadata ───────────────────────────────────────────────────────
+const TTS_ENGINE = { name: "Kokoro TTS", version: "v1.0", vendor: "Kokoro", accent: "#a855f7" };
+
 // ─── Conversation voice presets ────────────────────────────────────────────────
 const AGENT_VOICE    = "male-1";    // Adam
 const CUSTOMER_VOICE = "female-1";  // Bella
@@ -618,6 +621,14 @@ function AudioGeneratorSection() {
           {/* Metadata chips */}
           {result && (
             <div className="flex flex-wrap gap-2 pt-1">
+              {/* TTS engine badge */}
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs"
+                style={{ background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.3)", color: "#94a3b8" }}
+              >
+                <span style={{ color: "#64748b" }}>Engine: </span>
+                <span style={{ color: TTS_ENGINE.accent }}>{TTS_ENGINE.name}</span>
+              </span>
               {[
                 ["Voice", VOICES.find((v) => v.value === voice)?.label.split(" · ")[1] ?? voice],
                 ["Speed", `${speed.toFixed(2)}×`],
@@ -1230,6 +1241,19 @@ function SttEvalModal({ target, onClose }: { target: SttModalTarget; onClose: ()
                 </div>
               )}
 
+              {/* TTS engine info banner */}
+              <div
+                className="flex items-center gap-3 rounded-lg px-4 py-2.5"
+                style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)" }}
+              >
+                <Mic className="h-4 w-4 flex-shrink-0" style={{ color: TTS_ENGINE.accent }} />
+                <span className="text-xs" style={{ color: "#94a3b8" }}>
+                  Audio generated with{" "}
+                  <span style={{ color: TTS_ENGINE.accent, fontWeight: 600 }}>{TTS_ENGINE.name}</span>
+                  {" "}· {TTS_ENGINE.vendor}
+                </span>
+              </div>
+
               {/* Model selection */}
               <div className="space-y-2">
                 <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>
@@ -1327,7 +1351,7 @@ function SttEvalModal({ target, onClose }: { target: SttModalTarget; onClose: ()
                     style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#22c55e" }}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                    Evaluated with {results.length} model{results.length > 1 ? "s" : ""} · WER/CER via jiwer · Results saved to benchmark database
+                    Evaluated with {results.length} STT model{results.length > 1 ? "s" : ""} · Audio: <span style={{ color: TTS_ENGINE.accent, fontWeight: 600 }}>&nbsp;{TTS_ENGINE.name}</span>&nbsp;· WER/CER via jiwer · Saved to benchmark database
                   </div>
 
                   <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid rgba(0,212,232,0.12)" }}>
@@ -1962,6 +1986,19 @@ function ConversationGeneratorSection() {
   const [emotion, setEmotion]         = useState(0.5);
   const [outputDir, setOutputDir]     = useState("~/audio_samples/conversations");
   const [title, setTitle]             = useState(SAMPLE_TRANSCRIPTS[0]!.id);
+
+  // Auto-prefill from Text Generation page ("Use in TTS Lab" button)
+  useEffect(() => {
+    try {
+      const prefill = localStorage.getItem("tts-lab-prefill");
+      if (prefill) {
+        setTranscript(prefill);
+        setTitle("generated-conversation");
+        localStorage.removeItem("tts-lab-prefill");
+      }
+    } catch { /* localStorage not available */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [status, setStatus]   = useState<"idle" | "running" | "done" | "error">("idle");
   const [progress, setProgress] = useState(0);
