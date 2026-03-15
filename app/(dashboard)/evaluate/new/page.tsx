@@ -24,8 +24,12 @@ import {
   Globe,
   Zap,
   Activity,
+  ExternalLink,
+  Gift,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { getVendorConfig, getEndpointConfig } from "@/lib/vendor-endpoints";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -160,7 +164,30 @@ export default function NewEvaluationPage() {
       .finally(() => setLoadingVendors(false));
   }, []);
 
+  // Auto-fill endpoint URL when vendor / eval type / connection mode changes
+  useEffect(() => {
+    if (connectionMode !== "api") return;
+    const vendor = vendors.find((v) => v.id === vendorId);
+    if (!vendor) return;
+    const ep = getEndpointConfig(vendor.slug, evaluationType);
+    if (ep?.endpoint) setEndpointUrl(ep.endpoint);
+  }, [vendorId, evaluationType, connectionMode, vendors]);
+
+  // Auto-suggest model from vendor config when vendor / eval type changes
+  useEffect(() => {
+    const vendor = vendors.find((v) => v.id === vendorId);
+    if (!vendor) return;
+    const ep = getEndpointConfig(vendor.slug, evaluationType);
+    const defaultModel = ep?.models.find((m) => m.isDefault);
+    if (defaultModel && !modelName) setModelName(defaultModel.id);
+  }, [vendorId, evaluationType, vendors]);
+
   const selectedVendor = vendors.find((v) => v.id === vendorId);
+  const vendorCfg = selectedVendor ? getVendorConfig(selectedVendor.slug) : undefined;
+  const vendorEndpointCfg = vendorCfg
+    ? (evaluationType === "STT" ? vendorCfg.stt : evaluationType === "TTS" ? vendorCfg.tts : vendorCfg.v2v)
+    : undefined;
+
   const matchingProducts = selectedVendor?.products?.filter(
     (p) => p.category === evaluationType || p.category === "Conversational" || p.category === "Platform"
   ) ?? [];
@@ -319,7 +346,7 @@ export default function NewEvaluationPage() {
             <div className="space-y-5">
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: "var(--foreground)" }}>Select Vendor</h2>
-                <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Choose from registered vendors or select a model.</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--muted-foreground)" }}>Choose from registered vendors. Vendors with a free API tier are marked.</p>
               </div>
 
               {loadingVendors ? (
@@ -329,11 +356,14 @@ export default function NewEvaluationPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid gap-3 sm:grid-cols-2 max-h-64 overflow-y-auto">
+                  <div className="grid gap-3 sm:grid-cols-2 max-h-72 overflow-y-auto pr-1">
                     {vendors.map((v) => {
                       const hasMatchingProducts = v.products.some(
                         (p) => p.category === evaluationType || p.category === "Conversational" || p.category === "Platform"
                       );
+                      const cfg = getVendorConfig(v.slug);
+                      const epCfg = cfg ? (evaluationType === "STT" ? cfg.stt : evaluationType === "TTS" ? cfg.tts : cfg.v2v) : undefined;
+                      const hasFreeAPI = !!(cfg?.hasFree && epCfg);
                       const active = vendorId === v.id;
                       return (
                         <button
@@ -346,13 +376,20 @@ export default function NewEvaluationPage() {
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}>
                               {v.name.charAt(0)}
                             </div>
-                            <div>
-                              <span className="font-medium text-sm" style={{ color: "var(--foreground)" }}>{v.name}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-medium text-sm" style={{ color: "var(--foreground)" }}>{v.name}</span>
+                                {hasFreeAPI && (
+                                  <span className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold" style={{ background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}>
+                                    <Gift className="h-2.5 w-2.5" />FREE
+                                  </span>
+                                )}
+                              </div>
                               {hasMatchingProducts && (
-                                <span className="ml-2 text-xs" style={{ color: "#10b981" }}>Has {evaluationType} models</span>
+                                <span className="text-xs" style={{ color: "#64748b" }}>Has {evaluationType} models</span>
                               )}
                             </div>
                           </div>
@@ -430,34 +467,119 @@ export default function NewEvaluationPage() {
               </div>
 
               {connectionMode === "api" && (
-                <div className="space-y-3 rounded-xl p-4" style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.2)" }}>
-                  <div>
-                    <label htmlFor="endpoint" className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>
-                      API Endpoint URL
-                    </label>
-                    <input
-                      id="endpoint"
-                      type="url"
-                      value={endpointUrl}
-                      onChange={(e) => setEndpointUrl(e.target.value)}
-                      placeholder="https://api.vendor.com/v1/speech"
-                      className={inputClass}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="apikey" className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>
-                      API Key
-                    </label>
-                    <input
-                      id="apikey"
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-..."
-                      className={inputClass}
-                      style={inputStyle}
-                    />
+                <div className="space-y-4">
+                  {/* Free-tier info banner */}
+                  {vendorCfg && (
+                    <div
+                      className="rounded-xl p-4"
+                      style={{
+                        background: vendorCfg.hasFree ? "rgba(16,185,129,0.06)" : "rgba(245,158,11,0.06)",
+                        border: `1px solid ${vendorCfg.hasFree ? "rgba(16,185,129,0.25)" : "rgba(245,158,11,0.25)"}`,
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            {vendorCfg.hasFree
+                              ? <Gift className="h-4 w-4 flex-shrink-0" style={{ color: "#10b981" }} />
+                              : <Sparkles className="h-4 w-4 flex-shrink-0" style={{ color: "#f59e0b" }} />}
+                            <span className="text-sm font-semibold" style={{ color: vendorCfg.hasFree ? "#10b981" : "#f59e0b" }}>
+                              {vendorCfg.hasFree ? "Free tier available" : "Paid API — low cost"}
+                            </span>
+                          </div>
+                          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{vendorCfg.freeTier}</p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <a
+                            href={vendorCfg.signupUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                            style={{
+                              background: vendorCfg.hasFree ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)",
+                              color: vendorCfg.hasFree ? "#10b981" : "#f59e0b",
+                              border: `1px solid ${vendorCfg.hasFree ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Get API key
+                          </a>
+                          <a
+                            href={vendorCfg.docsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                            style={{ background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }}
+                          >
+                            Docs <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Available models from config */}
+                      {vendorEndpointCfg?.models && vendorEndpointCfg.models.length > 0 && (
+                        <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${vendorCfg.hasFree ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"}` }}>
+                          <p className="text-xs font-semibold mb-2" style={{ color: "var(--muted-foreground)" }}>Available models — click to select</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {vendorEndpointCfg.models.map((m) => (
+                              <button
+                                key={m.id}
+                                onClick={() => setModelName(m.id)}
+                                className="rounded-full px-2.5 py-1 text-xs font-medium transition-all"
+                                style={
+                                  modelName === m.id
+                                    ? { background: "rgba(0,212,232,0.12)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.3)" }
+                                    : { background: "var(--secondary)", color: "var(--muted-foreground)", border: "1px solid var(--border)" }
+                                }
+                              >
+                                {m.name}
+                                {m.isDefault && <span className="ml-1 opacity-60">(default)</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fields */}
+                  <div className="space-y-3 rounded-xl p-4" style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.2)" }}>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label htmlFor="endpoint" className="block text-sm font-medium" style={{ color: "var(--foreground)" }}>
+                          API Endpoint URL
+                        </label>
+                        {endpointUrl && vendorEndpointCfg?.endpoint === endpointUrl && (
+                          <span className="text-xs font-medium" style={{ color: "#10b981" }}>✓ Auto-filled</span>
+                        )}
+                      </div>
+                      <input
+                        id="endpoint"
+                        type="url"
+                        value={endpointUrl}
+                        onChange={(e) => setEndpointUrl(e.target.value)}
+                        placeholder="https://api.vendor.com/v1/speech"
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                      {vendorEndpointCfg?.notes && (
+                        <p className="mt-1 text-xs" style={{ color: "var(--muted-foreground)" }}>{vendorEndpointCfg.notes}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label htmlFor="apikey" className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>
+                        API Key
+                      </label>
+                      <input
+                        id="apikey"
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder={vendorCfg?.apiKeyHint ?? "sk-..."}
+                        className={inputClass}
+                        style={inputStyle}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
