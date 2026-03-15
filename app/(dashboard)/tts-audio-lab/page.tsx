@@ -388,6 +388,8 @@ function SliderRow({
 
 const TEXT_MAX = 5000;
 
+const TTS_CACHE_KEY = "tts-audio-lab-text";
+
 function AudioGeneratorSection() {
   const [text, setText] = useState("");
   const [voice, setVoice] = useState("default");
@@ -406,16 +408,28 @@ function AudioGeneratorSection() {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Auto-prefill from Text Generation page ("Use in TTS Lab" button)
+  // Restore text on mount: prefill from Text Generation takes priority,
+  // otherwise restore whatever the user had typed before.
   useEffect(() => {
     try {
       const prefill = localStorage.getItem("tts-lab-prefill");
       if (prefill) {
         setText(prefill.slice(0, TEXT_MAX));
+        localStorage.setItem(TTS_CACHE_KEY, prefill.slice(0, TEXT_MAX));
         localStorage.removeItem("tts-lab-prefill");
+        return;
       }
+      const cached = localStorage.getItem(TTS_CACHE_KEY);
+      if (cached) setText(cached);
     } catch { /* localStorage not available */ }
   }, []);
+
+  // Persist text to localStorage on every change
+  const handleTextChange = (val: string) => {
+    const trimmed = val.slice(0, TEXT_MAX);
+    setText(trimmed);
+    try { localStorage.setItem(TTS_CACHE_KEY, trimmed); } catch { /* ignore */ }
+  };
 
   const audioUrl = result ? `/api/tts/file/${encodeURIComponent(result.filename)}` : null;
 
@@ -475,7 +489,7 @@ function AudioGeneratorSection() {
             </div>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
+              onChange={(e) => handleTextChange(e.target.value)}
               placeholder="Enter text to synthesize…"
               rows={text.length > 200 ? 10 : 4}
               className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
