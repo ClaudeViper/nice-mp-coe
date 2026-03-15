@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Bell, Search, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, Search, Sparkles, Network, LogOut, User } from "lucide-react";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
+import { useState, useRef, useEffect } from "react";
 
 const ROUTE_LABELS: Record<string, string> = {
   "/": "Overview",
@@ -22,14 +23,27 @@ const ROUTE_LABELS: Record<string, string> = {
 function getLabel(pathname: string): string {
   if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname];
   if (pathname.startsWith("/evaluate/")) return "Evaluation Results";
-  if (pathname.startsWith("/vendors/"))  return "Vendor Detail";
-  if (pathname.startsWith("/reports/"))  return "Report Detail";
+  if (pathname.startsWith("/vendors/")) return "Vendor Detail";
+  if (pathname.startsWith("/reports/")) return "Report Detail";
   return "NICE MP CoE";
 }
 
 export function Topbar() {
   const pathname = usePathname();
-  const label    = getLabel(pathname);
+  const router = useRouter();
+  const label = getLabel(pathname);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   return (
     <header
@@ -91,14 +105,82 @@ export function Topbar() {
           />
         </button>
 
-        {/* User avatar */}
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white"
-          style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}
-          role="img"
-          aria-label="User: AH"
-        >
-          AH
+        {/* User avatar + dropdown */}
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-haspopup="true"
+            aria-expanded={open}
+            aria-label="Open user menu"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}
+          >
+            AH
+          </button>
+
+          {open && (
+            <div
+              role="menu"
+              className="absolute right-0 mt-2 w-52 rounded-xl overflow-hidden shadow-xl"
+              style={{
+                background: "#1a1f2e",
+                border: "1px solid rgba(255,255,255,0.1)",
+                zIndex: 50,
+              }}
+            >
+              {/* Profile header */}
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg,#00d4e8,#7c3aed)" }}
+                  >
+                    AH
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Asaf Hamo</p>
+                    <p className="text-xs" style={{ color: "rgba(148,163,184,0.6)" }}>NICE Admin</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu items */}
+              <div className="py-1.5">
+                <button
+                  role="menuitem"
+                  onClick={() => { router.push("/architecture"); setOpen(false); }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                  style={{ color: "#00d4e8" }}
+                >
+                  <Network className="h-4 w-4 flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="font-medium">System Architecture</p>
+                    <p className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>Platform overview & agents</p>
+                  </div>
+                </button>
+
+                <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "4px 16px" }} />
+
+                <button
+                  role="menuitem"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                  style={{ color: "rgba(148,163,184,0.7)" }}
+                >
+                  <User className="h-4 w-4 flex-shrink-0" />
+                  <span>Profile</span>
+                </button>
+
+                <button
+                  role="menuitem"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-white/5"
+                  style={{ color: "rgba(239,68,68,0.8)" }}
+                >
+                  <LogOut className="h-4 w-4 flex-shrink-0" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

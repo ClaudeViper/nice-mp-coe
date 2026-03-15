@@ -4,14 +4,11 @@ import { useState } from "react";
 import {
   BarChart3,
   Building2,
-  Brain,
   FileText,
   Newspaper,
-  Zap,
+  Cloud,
   Database,
   Globe,
-  Cloud,
-  Shield,
   Cpu,
   ArrowRight,
   Sparkles,
@@ -19,811 +16,356 @@ import {
   Mic,
   Volume2,
   AudioWaveform,
-  Code2,
   Layers,
-  Network,
   Bot,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
   FlaskConical,
+  Brain,
+  Network,
+  Shield,
+  Code2,
+  Zap,
+  Search,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   DATA
-───────────────────────────────────────────────────────────────────────────── */
+/* ─── Agent definitions ──────────────────────────────────────────────────── */
 
 const AGENTS = [
   {
     id: "benchmark-collector",
     name: "Benchmark Collector",
     icon: BarChart3,
-    color: "#00d4e8",
-    glow: "rgba(0,212,232,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(0,212,232,0.12),rgba(0,212,232,0.03))",
-    border: "rgba(0,212,232,0.3)",
+    accentColor: "#00d4e8",
     model: "Claude Opus 4-6",
     description:
-      "Autonomously harvests speech-AI performance metrics from 17+ web sources using Claude's native web_search tool. Deduplicates and upserts structured benchmark data into the platform database with full audit trails.",
+      "Autonomously harvests speech-AI performance metrics from 17+ web sources using Claude's native web_search tool. Deduplicates results and upserts structured data with full audit trails.",
     skills: ["Web Search", "JSON Extraction", "Deduplication", "Batch Upsert", "Change Detection"],
-    sources: ["HuggingFace ASR Leaderboard", "TTS Arena (ELO)", "Papers With Code", "Vendor API Docs", "GitHub Model Cards"],
-    metrics: ["WER / CER", "RTF / TTFB", "MOS Scores", "ELO Ratings", "Pricing / Tier"],
-    outputs: ["BenchmarkResult records", "Collector audit logs"],
-    connections: ["PostgreSQL", "Claude API", "Web Sources"],
+    sources: [
+      "HuggingFace Open ASR Leaderboard",
+      "TTS Arena (ELO scores)",
+      "Papers With Code — LibriSpeech / CommonVoice",
+      "Vendor pricing & API docs",
+      "GitHub model cards",
+    ],
+    metrics: ["WER / CER", "RTF (Real-Time Factor)", "TTFB", "MOS Scores", "ELO Ratings", "Pricing tiers"],
+    outputs: ["BenchmarkResult DB records", "Collector audit logs"],
   },
   {
     id: "vendor-registry",
     name: "Vendor Registry",
     icon: Building2,
-    color: "#7c3aed",
-    glow: "rgba(124,58,237,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(124,58,237,0.12),rgba(124,58,237,0.03))",
-    border: "rgba(124,58,237,0.3)",
+    accentColor: "#a78bfa",
     model: "Claude Sonnet 4-6",
     description:
-      "Runs 4 sequential deep-research passes per vendor — company overview, deployment & security, languages & pricing, and NICE CXone compatibility — to build and maintain a comprehensive structured vendor knowledge base.",
+      "Runs 4 sequential deep-research passes per vendor — company overview, deployment & security, languages & pricing, and NICE CXone compatibility — to build a structured knowledge base.",
     skills: ["Profile Research", "Compatibility Scoring", "Pricing Analysis", "Security Auditing", "Structured Extraction"],
-    sources: ["Vendor Websites", "API Documentation", "Compliance Pages", "Pricing Pages", "Integration Guides"],
-    metrics: ["Build vs Buy Score (1-10)", "Integration Days", "Language Coverage", "Security Certs"],
+    sources: [
+      "Vendor websites & API documentation",
+      "Compliance & certification pages",
+      "Pricing pages & volume discount tables",
+      "NICE CXone integration guides",
+    ],
+    metrics: ["Build vs Buy Score (1–10)", "Est. integration days", "Language coverage", "Security certificates"],
     outputs: ["Vendor profiles", "NICE compatibility matrix", "Pricing tier records"],
-    connections: ["PostgreSQL", "Claude API", "Web Sources"],
   },
   {
     id: "evaluation-runner",
     name: "Evaluation Runner",
     icon: FlaskConical,
-    color: "#f59e0b",
-    glow: "rgba(245,158,11,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.03))",
-    border: "rgba(245,158,11,0.3)",
+    accentColor: "#fbbf24",
     model: "Claude Sonnet 4-6",
     description:
-      "The core evaluation engine that tests STT, TTS, and V2V vendor models against 6 NICE proprietary datasets (150 total samples). Computes WER/CER, RTF, TTFB, and MOS scores with simulation mode powered by Claude for development workflows.",
+      "Core evaluation engine that tests STT, TTS, and V2V vendor models against 6 NICE proprietary datasets (150 total samples). Supports simulation mode for development workflows.",
     skills: ["STT Evaluation", "TTS Evaluation", "V2V Testing", "WER/CER Calculation", "Simulation Mode"],
     sources: [
-      "NICE-CX-Clean-EN (50 clips)",
-      "NICE-CX-Noisy-EN (50 clips)",
-      "NICE-TTS-IVR-EN (30 scripts)",
-      "NICE-TTS-Agent-EN (30 scripts)",
-      "NICE-V2V-Support-EN (10 scenarios)",
-      "NICE-V2V-IVR-EN (10 conversations)",
+      "NICE-CX-Clean-EN — 50 contact-center clips",
+      "NICE-CX-Noisy-EN — 50 noisy/accented clips",
+      "NICE-TTS-IVR-EN — 30 IVR prompt scripts",
+      "NICE-TTS-Agent-EN — 30 agent response scripts",
+      "NICE-V2V-Support-EN — 10 multi-turn scenarios",
+      "NICE-V2V-IVR-EN — 10 conversational IVR scripts",
     ],
-    metrics: ["WER / CER", "RTF (Real-Time Factor)", "TTFB", "MOS (naturalness)", "Task Completion Rate"],
-    outputs: ["EvaluationResult per sample", "Comparison summaries"],
-    connections: ["PostgreSQL", "Claude API", "Vendor APIs"],
+    metrics: ["WER / CER", "RTF", "TTFB", "MOS (naturalness)", "Task completion rate"],
+    outputs: ["EvaluationResult per sample", "Comparison summaries", "Status tracking"],
   },
   {
     id: "report-generator",
     name: "Report Generator",
     icon: FileText,
-    color: "#10b981",
-    glow: "rgba(16,185,129,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.03))",
-    border: "rgba(16,185,129,0.3)",
+    accentColor: "#34d399",
     model: "Claude Sonnet 4-6",
     description:
-      "Synthesises platform data into 5 types of strategic business intelligence reports — from monthly landscape analyses to build-vs-buy TCO projections — with executive summaries and HTML rendering.",
+      "Synthesises vendor, benchmark, evaluation and news data into 5 types of strategic business intelligence reports with executive summaries and full HTML rendering.",
     skills: ["Data Synthesis", "Markdown Generation", "HTML Rendering", "Executive Summarisation", "TCO Projection"],
     sources: ["Vendors DB", "Benchmarks DB", "Evaluations DB", "News DB"],
-    metrics: ["5 Report Types", "15K-char context window summary", "2-3 sentence exec summary"],
-    outputs: ["HTML Report", "Executive summary", "Report status tracking"],
-    connections: ["PostgreSQL", "Claude API"],
+    metrics: [
+      "Monthly Landscape report",
+      "Vendor Comparison report",
+      "Evaluation Summary report",
+      "Build vs Buy (TCO) report",
+      "Integration Readiness report",
+    ],
+    outputs: ["HTML Report content", "Executive summary (2–3 sentences)", "Report status tracking"],
   },
   {
     id: "news-scout",
     name: "News Scout",
     icon: Newspaper,
-    color: "#ef4444",
-    glow: "rgba(239,68,68,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.03))",
-    border: "rgba(239,68,68,0.3)",
+    accentColor: "#f87171",
     model: "Claude Sonnet 4-6",
     description:
-      "Continuously monitors 15+ industry sources — from ArXiv to vendor blogs — extracting and scoring news articles on relevance (1-10). Batches 3 parallel searches per cycle to maintain a live intelligence feed.",
+      "Continuously monitors 15+ industry sources — from ArXiv to vendor blogs — extracting and relevance-scoring articles (1–10). Processes 3 parallel searches per cycle.",
     skills: ["Source Monitoring", "Relevance Scoring", "Batch Processing", "Category Tagging", "Trend Detection"],
     sources: [
-      "ArXiv (cs.SD, cs.CL, eess.AS)",
-      "HuggingFace Blog",
-      "OpenAI / Google / ElevenLabs Blogs",
-      "Deepgram / Speechmatics",
+      "ArXiv — cs.SD, cs.CL, eess.AS",
+      "HuggingFace / OpenAI / Google blogs",
+      "ElevenLabs / Deepgram / Speechmatics",
       "TechCrunch / VentureBeat",
       "Artificial Analysis Leaderboards",
     ],
-    metrics: ["Relevance Score 1-10", "9-10: SOTA / Major Releases", "5-6: Interesting", "<5: Filtered"],
-    outputs: ["NewsItem records", "Category tags", "Relevance scores"],
-    connections: ["PostgreSQL", "Claude API", "Web Sources"],
+    metrics: ["Score 9–10: SOTA / major releases", "Score 7–8: significant dev", "Score 5–6: interesting", "Below 5: filtered"],
+    outputs: ["NewsItem records", "Relevance scores", "Category & tag labels"],
   },
   {
     id: "deployment-guidelines",
     name: "Deployment Guidelines",
     icon: Cloud,
-    color: "#6366f1",
-    glow: "rgba(99,102,241,0.35)",
-    bgGradient: "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(99,102,241,0.03))",
-    border: "rgba(99,102,241,0.3)",
+    accentColor: "#818cf8",
     model: "Claude Opus 4-6",
     description:
-      "Runs an agentic loop with web search to auto-generate production-ready deployment guides for integrating any vendor into NICE CXone — covering auth, quick-start code, configuration, rate limits, and troubleshooting.",
+      "Runs an agentic loop with web search to auto-generate production-ready NICE CXone integration guides — covering auth, quick-start code, configuration, rate limits, and troubleshooting.",
     skills: ["Agentic Loop", "Web Research", "Code Generation", "Integration Mapping", "Markdown Authoring"],
-    sources: ["Vendor API Docs", "Auth Guides", "SDK References", "NICE CXone Docs"],
-    metrics: ["7 document sections", "Auth + Quick Start + NICE Integration", "Rate limits & troubleshooting"],
-    outputs: ["Markdown deployment guide", "HTML rendering", "Status tracking"],
-    connections: ["PostgreSQL", "Claude API", "Web Sources"],
+    sources: ["Vendor API docs", "Auth & SDK references", "NICE CXone documentation"],
+    metrics: ["Prerequisites section", "Auth & API Keys", "Quick Start (code snippet)", "NICE CXone Integration", "Rate Limits & Troubleshooting"],
+    outputs: ["Markdown deployment guide", "HTML rendering", "Generation status tracking"],
   },
 ];
 
-const TECH_STACK = [
-  { category: "Frontend", color: "#00d4e8", items: [
-    { name: "Next.js 15", sub: "App Router + Turbopack" },
-    { name: "React 19", sub: "Server & Client Components" },
-    { name: "TypeScript 5", sub: "Strict mode" },
-    { name: "TailwindCSS 4", sub: "Utility-first styling" },
-    { name: "Radix UI", sub: "Accessible primitives" },
-    { name: "Recharts", sub: "Data visualisation" },
-  ]},
-  { category: "AI / Agents", color: "#7c3aed", items: [
-    { name: "Claude Opus 4-6", sub: "Complex research & collection" },
-    { name: "Claude Sonnet 4-6", sub: "Evaluation & reporting" },
-    { name: "web_search_20250305", sub: "Anthropic native search tool" },
-    { name: "Agentic Loops", sub: "Iterative tool-calling" },
-    { name: "@anthropic-ai/sdk", sub: "v0.78.0" },
-  ]},
-  { category: "Backend / Data", color: "#10b981", items: [
-    { name: "Node.js", sub: "Next.js API Routes" },
-    { name: "Prisma 7.5", sub: "Type-safe ORM" },
-    { name: "PostgreSQL", sub: "Primary datastore" },
-    { name: "REST APIs", sub: "30+ route handlers" },
-  ]},
-  { category: "Infrastructure", color: "#f59e0b", items: [
-    { name: "Docker", sub: "Multi-stage build" },
-    { name: "Standalone output", sub: "Next.js optimised" },
-    { name: "Vitest", sub: "Unit testing" },
-    { name: "Playwright", sub: "E2E testing" },
-  ]},
+/* ─── Architecture layers ────────────────────────────────────────────────── */
+
+const LAYERS = [
+  { label: "Browser / Client", desc: "Next.js 15 — React 19 Server & Client Components, TailwindCSS 4, Radix UI, Recharts", icon: Globe, color: "#00d4e8" },
+  { label: "Next.js API Routes", desc: "30+ REST endpoints handling agent triggers, data queries, streaming responses", icon: Code2, color: "#a78bfa" },
+  { label: "Agent Orchestrator", desc: "6 autonomous Claude-powered agents — each with tool access, agentic loops, and structured outputs", icon: Bot, color: "#fbbf24" },
+  { label: "Anthropic Claude API", desc: "Claude Opus 4-6 (research) + Claude Sonnet 4-6 (evaluation & reporting) + native web_search_20250305 tool", icon: Brain, color: "#f87171" },
+  { label: "PostgreSQL + Prisma 7", desc: "Type-safe ORM, full audit trail, structured vendor/benchmark/evaluation knowledge base", icon: Database, color: "#34d399" },
 ];
 
-const ARCHITECTURE_LAYERS = [
-  { label: "Browser / Client", color: "#00d4e8", icon: Globe, desc: "Next.js React 19 — SSR + Client Components" },
-  { label: "Next.js API Routes", color: "#7c3aed", icon: Code2, desc: "30+ REST endpoints, streaming responses" },
-  { label: "Agent Orchestrator", color: "#f59e0b", icon: Bot, desc: "6 autonomous Claude-powered agents" },
-  { label: "Anthropic Claude API", color: "#ef4444", icon: Brain, desc: "Opus 4-6 + Sonnet 4-6 + native web_search" },
-  { label: "PostgreSQL + Prisma", color: "#10b981", icon: Database, desc: "Type-safe ORM, full audit trail" },
+/* ─── Data flow ──────────────────────────────────────────────────────────── */
+
+const FLOW_STEPS = [
+  { n: "01", label: "User triggers agent via UI", icon: Zap, color: "#00d4e8" },
+  { n: "02", label: "API route spawns agent", icon: Code2, color: "#a78bfa" },
+  { n: "03", label: "Agent calls Claude API", icon: Brain, color: "#fbbf24" },
+  { n: "04", label: "Claude uses web_search", icon: Search, color: "#f87171" },
+  { n: "05", label: "Structured JSON extracted", icon: Activity, color: "#34d399" },
+  { n: "06", label: "Results upserted to DB", icon: Database, color: "#818cf8" },
+  { n: "07", label: "UI reflects live updates", icon: Sparkles, color: "#00d4e8" },
 ];
 
-const DATA_FLOW_STEPS = [
-  { step: "01", label: "User triggers agent", icon: Zap, color: "#00d4e8" },
-  { step: "02", label: "API Route spawns agent", icon: Code2, color: "#7c3aed" },
-  { step: "03", label: "Agent calls Claude API", icon: Brain, color: "#f59e0b" },
-  { step: "04", label: "Claude uses web_search tool", icon: Globe, color: "#ef4444" },
-  { step: "05", label: "Structured data extracted", icon: Activity, color: "#10b981" },
-  { step: "06", label: "Results upserted to DB", icon: Database, color: "#6366f1" },
-  { step: "07", label: "UI reflects live updates", icon: Sparkles, color: "#00d4e8" },
+/* ─── Evaluation domains ─────────────────────────────────────────────────── */
+
+const DOMAINS = [
+  {
+    icon: Mic,
+    label: "Speech-to-Text (STT)",
+    color: "#00d4e8",
+    metrics: ["Word Error Rate (WER)", "Character Error Rate (CER)", "Real-Time Factor (RTF)", "Time to First Byte (TTFB)", "Speaker Diarisation", "Punctuation Accuracy"],
+    datasets: ["NICE-CX-Clean-EN · 50 clean contact-center clips", "NICE-CX-Noisy-EN · 50 noisy / accented clips"],
+  },
+  {
+    icon: Volume2,
+    label: "Text-to-Speech (TTS)",
+    color: "#a78bfa",
+    metrics: ["MOS Naturalness Score", "Intelligibility Rating", "TTFB / Streaming Latency", "ELO Score (TTS Arena)", "Prosody Quality"],
+    datasets: ["NICE-TTS-IVR-EN · 30 IVR prompt scripts", "NICE-TTS-Agent-EN · 30 agent response scripts"],
+  },
+  {
+    icon: AudioWaveform,
+    label: "Voice-to-Voice (V2V)",
+    color: "#fbbf24",
+    metrics: ["Task Completion Rate", "Turn-Taking Accuracy", "Intent Recognition %", "End-to-End Latency", "Conversation Coherence"],
+    datasets: ["NICE-V2V-Support-EN · 10 multi-turn support scenarios", "NICE-V2V-IVR-EN · 10 conversational IVR scripts"],
+  },
 ];
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   COMPONENTS
-───────────────────────────────────────────────────────────────────────────── */
+/* ─── Tech stack ─────────────────────────────────────────────────────────── */
+
+const TECH = [
+  {
+    category: "Frontend",
+    color: "#00d4e8",
+    items: [
+      { name: "Next.js 15", sub: "App Router + Turbopack" },
+      { name: "React 19", sub: "Server & Client Components" },
+      { name: "TypeScript 5", sub: "Strict mode" },
+      { name: "TailwindCSS 4", sub: "Utility-first styling" },
+      { name: "Radix UI", sub: "Accessible primitives" },
+      { name: "Recharts", sub: "Data visualisation" },
+    ],
+  },
+  {
+    category: "AI / Agents",
+    color: "#a78bfa",
+    items: [
+      { name: "Claude Opus 4-6", sub: "Complex research & collection" },
+      { name: "Claude Sonnet 4-6", sub: "Evaluation & reporting" },
+      { name: "web_search_20250305", sub: "Anthropic native search tool" },
+      { name: "Agentic Loops", sub: "Iterative tool-calling" },
+      { name: "@anthropic-ai/sdk", sub: "v0.78.0" },
+    ],
+  },
+  {
+    category: "Backend / Data",
+    color: "#34d399",
+    items: [
+      { name: "Node.js", sub: "Next.js API Routes" },
+      { name: "Prisma 7.5", sub: "Type-safe ORM" },
+      { name: "PostgreSQL", sub: "Primary datastore" },
+      { name: "REST APIs", sub: "30+ route handlers" },
+    ],
+  },
+  {
+    category: "Infrastructure",
+    color: "#fbbf24",
+    items: [
+      { name: "Docker", sub: "Multi-stage build" },
+      { name: "Standalone output", sub: "Next.js optimised" },
+      { name: "Vitest", sub: "Unit testing" },
+      { name: "Playwright", sub: "E2E testing" },
+    ],
+  },
+];
+
+/* ─── Agent card ─────────────────────────────────────────────────────────── */
 
 function AgentCard({ agent }: { agent: (typeof AGENTS)[0] }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const Icon = agent.icon;
 
   return (
     <div
       style={{
-        background: agent.bgGradient,
-        border: `1px solid ${agent.border}`,
-        borderRadius: "16px",
-        padding: "24px",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease",
-        position: "relative",
+        background: "#1e2433",
+        borderRadius: "12px",
         overflow: "hidden",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 32px ${agent.glow}`;
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+        border: "1px solid rgba(255,255,255,0.07)",
       }}
     >
-      {/* Corner glow */}
-      <div
-        style={{
-          position: "absolute",
-          top: "-40px",
-          right: "-40px",
-          width: "120px",
-          height: "120px",
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${agent.glow} 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
+      {/* Colored top bar */}
+      <div style={{ height: "4px", background: agent.accentColor }} />
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
-          <div
+      <div className="p-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "#262d3d",
+                border: `1px solid ${agent.accentColor}40`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon style={{ width: "18px", height: "18px", color: agent.accentColor }} />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm leading-tight">{agent.name}</h3>
+              <span
+                className="text-xs font-mono"
+                style={{ color: agent.accentColor }}
+              >
+                {agent.model}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors"
             style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "12px",
-              background: `linear-gradient(135deg, ${agent.color}22, ${agent.color}11)`,
-              border: `1px solid ${agent.border}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              background: open ? "#262d3d" : "transparent",
+              color: "rgba(148,163,184,0.7)",
+              border: "1px solid rgba(255,255,255,0.07)",
               flexShrink: 0,
             }}
           >
-            <Icon style={{ width: "20px", height: "20px", color: agent.color }} />
-          </div>
-          <div>
-            <h3 className="font-bold text-white text-base leading-tight">{agent.name}</h3>
-            <span
-              className="text-xs font-mono px-2 py-0.5 rounded-full"
-              style={{ background: `${agent.color}15`, color: agent.color, border: `1px solid ${agent.color}30` }}
-            >
-              {agent.model}
-            </span>
-          </div>
+            {open ? "Less" : "More"}
+            {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          style={{ color: "rgba(148,163,184,0.6)", flexShrink: 0 }}
-          className="hover:text-white transition-colors mt-1"
-          aria-label={expanded ? "Collapse" : "Expand"}
-        >
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-      </div>
 
-      {/* Description */}
-      <p className="text-sm leading-relaxed mb-4" style={{ color: "rgba(148,163,184,0.8)" }}>
-        {agent.description}
-      </p>
-
-      {/* Skills */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        {agent.skills.map((skill) => (
-          <span
-            key={skill}
-            className="text-xs px-2 py-1 rounded-lg font-medium"
-            style={{ background: `${agent.color}10`, color: agent.color, border: `1px solid ${agent.color}20` }}
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
-
-      {/* Expanded details */}
-      {expanded && (
-        <div className="space-y-4 pt-4" style={{ borderTop: `1px solid ${agent.border}` }}>
-          {/* Sources */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: agent.color }}>
-              Data Sources
-            </p>
-            <ul className="space-y-1">
-              {agent.sources.map((src) => (
-                <li key={src} className="flex items-center gap-2 text-xs" style={{ color: "rgba(148,163,184,0.7)" }}>
-                  <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: agent.color, flexShrink: 0 }} />
-                  {src}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Metrics */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: agent.color }}>
-              Key Metrics
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {agent.metrics.map((m) => (
-                <span key={m} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", color: "rgba(148,163,184,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  {m}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Outputs */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: agent.color }}>
-              Outputs
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {agent.outputs.map((o) => (
-                <span key={o} className="text-xs px-2 py-0.5 rounded" style={{ background: `${agent.color}08`, color: agent.color, border: `1px solid ${agent.color}20` }}>
-                  {o}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Connections */}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: agent.color }}>
-              Connects To
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {agent.connections.map((c) => (
-                <span key={c} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                  {c}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   PAGE
-───────────────────────────────────────────────────────────────────────────── */
-
-export default function ArchitecturePage() {
-  return (
-    <div
-      style={{
-        minHeight: "100%",
-        padding: "32px",
-        fontFamily: "var(--font-sans)",
-      }}
-    >
-      {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <div className="relative mb-12 overflow-hidden rounded-2xl p-10"
-        style={{
-          background: "linear-gradient(135deg,rgba(0,212,232,0.08) 0%,rgba(124,58,237,0.08) 50%,rgba(0,0,0,0) 100%)",
-          border: "1px solid rgba(0,212,232,0.15)",
-        }}
-      >
-        {/* Background grid pattern */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(0,212,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,232,0.04) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-            pointerEvents: "none",
-          }}
-        />
-        {/* Radial glow */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-80px",
-            right: "10%",
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        <div className="relative">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-              style={{ background: "rgba(0,212,232,0.12)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.3)" }}
-            >
-              <Network className="h-3.5 w-3.5" />
-              System Architecture
-            </div>
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-              style={{ background: "rgba(124,58,237,0.12)", color: "#a78bfa", border: "1px solid rgba(124,58,237,0.3)" }}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              6 Autonomous Agents
-            </div>
-          </div>
-
-          <h1
-            className="text-4xl font-black mb-3"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #00d4e8 40%, #7c3aed 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              letterSpacing: "-0.03em",
-            }}
-          >
-            NICE MP CoE — Agentic Platform Architecture
-          </h1>
-          <p className="text-base max-w-3xl mb-8" style={{ color: "rgba(148,163,184,0.8)", lineHeight: "1.7" }}>
-            A fully agentic, AI-native platform for evaluating, benchmarking, and researching Speech-to-Text, Text-to-Speech,
-            and Voice-to-Voice technologies. Powered by Anthropic Claude with native web search across 6 autonomous agents,
-            a Next.js 15 frontend, and a Prisma-managed PostgreSQL knowledge base.
-          </p>
-
-          {/* Stat pills */}
-          <div className="flex flex-wrap gap-3">
-            {[
-              { label: "Agents", value: "6", color: "#00d4e8" },
-              { label: "Data Sources", value: "17+", color: "#7c3aed" },
-              { label: "Test Samples", value: "150", color: "#f59e0b" },
-              { label: "API Routes", value: "30+", color: "#10b981" },
-              { label: "Report Types", value: "5", color: "#ef4444" },
-              { label: "Tech Stack", value: "Next.js 15 + Claude", color: "#6366f1" },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                <span className="text-xl font-black" style={{ color: stat.color }}>{stat.value}</span>
-                <span className="text-sm" style={{ color: "rgba(148,163,184,0.7)" }}>{stat.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── ARCHITECTURE LAYERS ───────────────────────────────────────────── */}
-      <section className="mb-12">
-        <SectionHeader icon={Layers} label="System Layers" color="#00d4e8" />
-
-        <div className="relative">
-          {/* Connection line */}
-          <div
-            style={{
-              position: "absolute",
-              left: "22px",
-              top: "24px",
-              bottom: "24px",
-              width: "2px",
-              background: "linear-gradient(180deg,#00d4e8,#7c3aed,#f59e0b,#ef4444,#10b981)",
-              opacity: 0.4,
-            }}
-          />
-
-          <div className="space-y-3 pl-1">
-            {ARCHITECTURE_LAYERS.map((layer, i) => {
-              const Icon = layer.icon;
-              return (
-                <div key={i} className="flex items-center gap-4 relative">
-                  {/* Dot */}
-                  <div
-                    style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "50%",
-                      background: `${layer.color}15`,
-                      border: `2px solid ${layer.color}50`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      zIndex: 1,
-                      boxShadow: `0 0 12px ${layer.color}30`,
-                    }}
-                  >
-                    <Icon style={{ width: "18px", height: "18px", color: layer.color }} />
-                  </div>
-
-                  <div
-                    className="flex-1 flex items-center justify-between rounded-xl px-5 py-3"
-                    style={{
-                      background: `${layer.color}08`,
-                      border: `1px solid ${layer.color}20`,
-                    }}
-                  >
-                    <span className="font-semibold text-white">{layer.label}</span>
-                    <span className="text-sm hidden sm:block" style={{ color: "rgba(148,163,184,0.7)" }}>{layer.desc}</span>
-                    {i < ARCHITECTURE_LAYERS.length - 1 && (
-                      <ArrowRight className="h-4 w-4 ml-4 sm:hidden flex-shrink-0" style={{ color: layer.color }} />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── DATA FLOW ─────────────────────────────────────────────────────── */}
-      <section className="mb-12">
-        <SectionHeader icon={Activity} label="Agent Request Data Flow" color="#7c3aed" />
-
-        <div
-          className="rounded-2xl p-6"
-          style={{
-            background: "rgba(124,58,237,0.04)",
-            border: "1px solid rgba(124,58,237,0.15)",
-          }}
-        >
-          <div className="flex flex-wrap gap-2 items-center justify-start">
-            {DATA_FLOW_STEPS.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div key={i} className="flex items-center gap-2">
-                  <div
-                    className="flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl"
-                    style={{
-                      background: `${step.color}10`,
-                      border: `1px solid ${step.color}25`,
-                      minWidth: "110px",
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold" style={{ color: step.color }}>{step.step}</span>
-                      <Icon style={{ width: "14px", height: "14px", color: step.color }} />
-                    </div>
-                    <span className="text-xs text-center font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
-                      {step.label}
-                    </span>
-                  </div>
-                  {i < DATA_FLOW_STEPS.length - 1 && (
-                    <ArrowRight className="h-4 w-4 flex-shrink-0" style={{ color: "rgba(148,163,184,0.3)" }} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── BENCHMARK CATEGORIES ──────────────────────────────────────────── */}
-      <section className="mb-12">
-        <SectionHeader icon={Mic} label="Evaluation Domains" color="#f59e0b" />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              icon: Mic,
-              label: "Speech-to-Text (STT)",
-              color: "#00d4e8",
-              metrics: ["WER / CER", "Real-Time Factor (RTF)", "TTFB (latency)", "Speaker Diarisation", "Punctuation Accuracy"],
-              datasets: ["NICE-CX-Clean-EN · 50 clips", "NICE-CX-Noisy-EN · 50 clips"],
-            },
-            {
-              icon: Volume2,
-              label: "Text-to-Speech (TTS)",
-              color: "#7c3aed",
-              metrics: ["MOS (naturalness)", "Intelligibility", "TTFB", "ELO Score (TTS Arena)", "Prosody quality"],
-              datasets: ["NICE-TTS-IVR-EN · 30 scripts", "NICE-TTS-Agent-EN · 30 scripts"],
-            },
-            {
-              icon: AudioWaveform,
-              label: "Voice-to-Voice (V2V)",
-              color: "#f59e0b",
-              metrics: ["Task Completion Rate", "Turn-Taking Accuracy", "Intent Recognition", "End-to-End Latency", "Conversation coherence"],
-              datasets: ["NICE-V2V-Support-EN · 10 scenarios", "NICE-V2V-IVR-EN · 10 conversations"],
-            },
-          ].map((domain) => {
-            const Icon = domain.icon;
-            return (
-              <div
-                key={domain.label}
-                className="rounded-2xl p-5"
-                style={{
-                  background: `${domain.color}08`,
-                  border: `1px solid ${domain.color}25`,
-                }}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
-                      background: `${domain.color}15`,
-                      border: `1px solid ${domain.color}30`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Icon style={{ width: "16px", height: "16px", color: domain.color }} />
-                  </div>
-                  <h3 className="font-bold text-white text-sm">{domain.label}</h3>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: domain.color }}>Metrics</p>
-                  <ul className="space-y-1">
-                    {domain.metrics.map((m) => (
-                      <li key={m} className="flex items-center gap-2 text-xs" style={{ color: "rgba(148,163,184,0.75)" }}>
-                        <span style={{ width: "3px", height: "3px", borderRadius: "50%", background: domain.color, flexShrink: 0 }} />
-                        {m}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: domain.color }}>Datasets</p>
-                  {domain.datasets.map((d) => (
-                    <div key={d} className="flex items-center gap-2 text-xs mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>
-                      <Database style={{ width: "10px", height: "10px", color: domain.color, flexShrink: 0 }} />
-                      {d}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── AGENTS ────────────────────────────────────────────────────────── */}
-      <section className="mb-12">
-        <SectionHeader icon={Bot} label="Autonomous Agents" color="#00d4e8" subtitle="Click an agent to expand its full capability profile" />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-          {AGENTS.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── TECH STACK ────────────────────────────────────────────────────── */}
-      <section className="mb-12">
-        <SectionHeader icon={Cpu} label="Technology Stack" color="#10b981" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-          {TECH_STACK.map((cat) => (
-            <div
-              key={cat.category}
-              className="rounded-2xl p-5"
-              style={{
-                background: `${cat.color}06`,
-                border: `1px solid ${cat.color}20`,
-              }}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <div
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: cat.color,
-                    boxShadow: `0 0 8px ${cat.color}`,
-                  }}
-                />
-                <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: cat.color }}>
-                  {cat.category}
-                </h3>
-              </div>
-              <ul className="space-y-2.5">
-                {cat.items.map((item) => (
-                  <li key={item.name}>
-                    <p className="text-sm font-semibold text-white">{item.name}</p>
-                    <p className="text-xs" style={{ color: "rgba(148,163,184,0.55)" }}>{item.sub}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── INTEGRATION MATRIX ────────────────────────────────────────────── */}
-      <section className="mb-8">
-        <SectionHeader icon={Shield} label="Integration & Compliance" color="#6366f1" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* NICE CXone Integration */}
-          <div
-            className="rounded-2xl p-6"
-            style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)" }}
-          >
-            <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-              <Network className="h-4 w-4" style={{ color: "#6366f1" }} />
-              NICE CXone Integration Matrix
-            </h3>
-            <p className="text-sm mb-4" style={{ color: "rgba(148,163,184,0.7)" }}>
-              Each vendor assessed on integration readiness with a scored build-vs-buy analysis.
-            </p>
-            <div className="space-y-2">
-              {[
-                { label: "Build vs Buy Score", desc: "1–10 strategic score per vendor" },
-                { label: "Integration Method", desc: "REST / SDK / WebSocket / Embedded" },
-                { label: "Estimated Days", desc: "Projected integration effort" },
-                { label: "Migration Complexity", desc: "Low / Medium / High / Critical" },
-                { label: "Auto-generated Guides", desc: "Deployment Guidelines Agent" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-start gap-3 text-xs">
-                  <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#6366f1", marginTop: "6px", flexShrink: 0 }} />
-                  <div>
-                    <span className="font-semibold text-white">{item.label}</span>
-                    <span style={{ color: "rgba(148,163,184,0.6)" }}> — {item.desc}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Security certs */}
-          <div
-            className="rounded-2xl p-6"
-            style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}
-          >
-            <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-              <Shield className="h-4 w-4" style={{ color: "#10b981" }} />
-              Security & Compliance Tracking
-            </h3>
-            <p className="text-sm mb-4" style={{ color: "rgba(148,163,184,0.7)" }}>
-              Vendor Registry agent automatically audits and records compliance certifications.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["SOC 2 Type II", "HIPAA", "GDPR", "FedRAMP", "ISO 27001", "PCI DSS", "CCPA", "C5", "StateRAMP", "CSA STAR"].map((cert) => (
-                <span
-                  key={cert}
-                  className="text-xs px-2.5 py-1 rounded-lg font-medium"
-                  style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}
-                >
-                  {cert}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-4 pt-4" style={{ borderTop: "1px solid rgba(16,185,129,0.15)" }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#10b981" }}>Deployment Options Tracked</p>
-              <div className="flex flex-wrap gap-2">
-                {["Cloud", "On-Premises", "Hybrid", "Edge", "Air-Gapped"].map((d) => (
-                  <span key={d} className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    {d}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <div
-        className="rounded-2xl p-6 text-center"
-        style={{
-          background: "linear-gradient(135deg,rgba(0,212,232,0.06),rgba(124,58,237,0.06))",
-          border: "1px solid rgba(0,212,232,0.12)",
-        }}
-      >
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4" style={{ color: "#7c3aed" }} />
-          <span className="text-sm font-semibold text-white">Powered by Anthropic Claude</span>
-          <Sparkles className="h-4 w-4" style={{ color: "#00d4e8" }} />
-        </div>
-        <p className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>
-          NICE MP CoE Agentic Platform · Built with Next.js 15, React 19, TypeScript, Prisma, PostgreSQL & Claude Opus / Sonnet 4-6
+        {/* Description */}
+        <p className="text-sm mb-4" style={{ color: "#94a3b8", lineHeight: "1.6" }}>
+          {agent.description}
         </p>
+
+        {/* Skill tags */}
+        <div className="flex flex-wrap gap-1.5">
+          {agent.skills.map((s) => (
+            <span
+              key={s}
+              className="text-xs px-2.5 py-1 rounded-full font-medium"
+              style={{ background: "#262d3d", color: agent.accentColor, border: `1px solid ${agent.accentColor}30` }}
+            >
+              {s}
+            </span>
+          ))}
+        </div>
+
+        {/* Expanded section */}
+        {open && (
+          <div className="mt-4 space-y-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            <DetailBlock label="Data Sources" color={agent.accentColor} items={agent.sources} bullet />
+            <DetailBlock label="Key Metrics" color={agent.accentColor} items={agent.metrics} />
+            <DetailBlock label="Outputs" color={agent.accentColor} items={agent.outputs} />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   SHARED HELPER
-───────────────────────────────────────────────────────────────────────────── */
-
-function SectionHeader({
-  icon: Icon,
-  label,
-  color,
-  subtitle,
-}: {
-  icon: React.ElementType;
-  label: string;
-  color: string;
-  subtitle?: string;
-}) {
+function DetailBlock({ label, color, items, bullet }: { label: string; color: string; items: string[]; bullet?: boolean }) {
   return (
-    <div className="flex items-center gap-3 mb-5">
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color }}>
+        {label}
+      </p>
+      <ul className="space-y-1">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2 text-xs" style={{ color: "#94a3b8" }}>
+            {bullet && (
+              <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: color, marginTop: "5px", flexShrink: 0 }} />
+            )}
+            {!bullet && (
+              <span style={{ color, flexShrink: 0, marginTop: "1px" }}>›</span>
+            )}
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ─── Section heading ────────────────────────────────────────────────────── */
+
+function SectionTitle({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-6">
       <div
         style={{
-          width: "32px",
-          height: "32px",
+          width: "34px",
+          height: "34px",
           borderRadius: "8px",
-          background: `${color}15`,
-          border: `1px solid ${color}30`,
+          background: "#1e2433",
+          border: `1px solid ${color}40`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -832,11 +374,296 @@ function SectionHeader({
       >
         <Icon style={{ width: "15px", height: "15px", color }} />
       </div>
-      <div>
-        <h2 className="text-lg font-bold text-white">{label}</h2>
-        {subtitle && <p className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>{subtitle}</p>}
+      <h2 className="text-base font-bold text-white">{label}</h2>
+      <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+    </div>
+  );
+}
+
+/* ─── Page ───────────────────────────────────────────────────────────────── */
+
+export default function ArchitecturePage() {
+  return (
+    <div style={{ padding: "32px", maxWidth: "1200px", margin: "0 auto" }}>
+
+      {/* ── HERO ──────────────────────────────────────────────────────── */}
+      <div
+        className="mb-10 rounded-2xl p-8"
+        style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Chip color="#00d4e8" icon={Network} label="System Architecture" />
+          <Chip color="#a78bfa" icon={Sparkles} label="6 Autonomous Agents" />
+          <Chip color="#34d399" icon={Brain} label="Powered by Claude" />
+        </div>
+
+        <h1 className="text-3xl font-black text-white mb-2" style={{ letterSpacing: "-0.03em" }}>
+          NICE MP CoE — Agentic Platform
+        </h1>
+        <p className="text-sm mb-7" style={{ color: "#94a3b8", maxWidth: "680px", lineHeight: "1.7" }}>
+          A fully agentic, AI-native platform for evaluating, benchmarking, and researching Speech-to-Text,
+          Text-to-Speech, and Voice-to-Voice technologies. Powered by Anthropic Claude with native web search,
+          a Next.js 15 frontend, and a Prisma-managed PostgreSQL knowledge base.
+        </p>
+
+        <div className="flex flex-wrap gap-3">
+          {[
+            { value: "6", label: "Agents", color: "#00d4e8" },
+            { value: "17+", label: "Data Sources", color: "#a78bfa" },
+            { value: "150", label: "Test Samples", color: "#fbbf24" },
+            { value: "30+", label: "API Routes", color: "#34d399" },
+            { value: "5", label: "Report Types", color: "#f87171" },
+            { value: "Next.js 15", label: "Framework", color: "#818cf8" },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="flex items-baseline gap-2 px-4 py-2 rounded-xl"
+              style={{ background: "#262d3d", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <span className="text-xl font-black" style={{ color: s.color }}>{s.value}</span>
+              <span className="text-xs" style={{ color: "#64748b" }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="flex-1 h-px ml-2" style={{ background: `linear-gradient(90deg,${color}30,transparent)` }} />
+
+      {/* ── SYSTEM LAYERS ─────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <SectionTitle icon={Layers} label="System Layers" color="#00d4e8" />
+
+        <div className="space-y-2">
+          {LAYERS.map((layer, i) => {
+            const Icon = layer.icon;
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-4 rounded-xl p-4"
+                style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <div
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    background: "#262d3d",
+                    border: `2px solid ${layer.color}50`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon style={{ width: "16px", height: "16px", color: layer.color }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white text-sm">{layer.label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>{layer.desc}</p>
+                </div>
+                {i < LAYERS.length - 1 && (
+                  <ArrowRight className="h-4 w-4 flex-shrink-0" style={{ color: "rgba(255,255,255,0.15)" }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── DATA FLOW ─────────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <SectionTitle icon={Activity} label="Agent Request Data Flow" color="#a78bfa" />
+
+        <div
+          className="rounded-xl p-5"
+          style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <div className="flex flex-wrap gap-2 items-center">
+            {FLOW_STEPS.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <div
+                    className="flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl"
+                    style={{ background: "#262d3d", border: `1px solid ${step.color}30`, minWidth: "100px" }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-mono font-bold" style={{ color: step.color }}>{step.n}</span>
+                      <Icon style={{ width: "12px", height: "12px", color: step.color }} />
+                    </div>
+                    <span className="text-xs text-center font-medium text-white leading-tight">{step.label}</span>
+                  </div>
+                  {i < FLOW_STEPS.length - 1 && (
+                    <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "rgba(255,255,255,0.2)" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── EVALUATION DOMAINS ────────────────────────────────────────── */}
+      <section className="mb-10">
+        <SectionTitle icon={Mic} label="Evaluation Domains" color="#fbbf24" />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {DOMAINS.map((d) => {
+            const Icon = d.icon;
+            return (
+              <div
+                key={d.label}
+                className="rounded-xl p-5"
+                style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)", borderTop: `3px solid ${d.color}` }}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon style={{ width: "16px", height: "16px", color: d.color }} />
+                  <h3 className="font-bold text-white text-sm">{d.label}</h3>
+                </div>
+
+                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: d.color }}>Metrics</p>
+                <ul className="space-y-1 mb-4">
+                  {d.metrics.map((m) => (
+                    <li key={m} className="flex items-center gap-2 text-xs" style={{ color: "#94a3b8" }}>
+                      <span style={{ width: "3px", height: "3px", borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                      {m}
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: d.color }}>Datasets</p>
+                {d.datasets.map((ds) => (
+                  <div key={ds} className="flex items-start gap-2 text-xs mb-1" style={{ color: "#64748b" }}>
+                    <Database style={{ width: "10px", height: "10px", color: d.color, flexShrink: 0, marginTop: "2px" }} />
+                    {ds}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── AGENTS ────────────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <SectionTitle icon={Bot} label="Autonomous Agents" color="#00d4e8" />
+        <p className="text-sm mb-5" style={{ color: "#64748b", marginTop: "-16px" }}>
+          Click "More" on any agent to see full data sources, metrics, and outputs.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {AGENTS.map((agent) => (
+            <AgentCard key={agent.id} agent={agent} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── TECH STACK ────────────────────────────────────────────────── */}
+      <section className="mb-10">
+        <SectionTitle icon={Cpu} label="Technology Stack" color="#34d399" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {TECH.map((cat) => (
+            <div
+              key={cat.category}
+              className="rounded-xl p-5"
+              style={{
+                background: "#1e2433",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderLeft: `3px solid ${cat.color}`,
+              }}
+            >
+              <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: cat.color }}>
+                {cat.category}
+              </p>
+              <ul className="space-y-3">
+                {cat.items.map((item) => (
+                  <li key={item.name}>
+                    <p className="text-sm font-semibold text-white">{item.name}</p>
+                    <p className="text-xs" style={{ color: "#64748b" }}>{item.sub}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── COMPLIANCE ────────────────────────────────────────────────── */}
+      <section className="mb-6">
+        <SectionTitle icon={Shield} label="Security & Compliance Tracking" color="#818cf8" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            className="rounded-xl p-5"
+            style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#818cf8" }}>
+              Certificates Tracked per Vendor
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["SOC 2 Type II", "HIPAA", "GDPR", "FedRAMP", "ISO 27001", "PCI DSS", "CCPA", "C5", "StateRAMP", "CSA STAR"].map((cert) => (
+                <span
+                  key={cert}
+                  className="text-xs px-2.5 py-1 rounded-lg font-medium"
+                  style={{ background: "#262d3d", color: "#a5b4fc", border: "1px solid rgba(129,140,248,0.25)" }}
+                >
+                  {cert}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="rounded-xl p-5"
+            style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+          >
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#34d399" }}>
+              NICE CXone Integration Matrix
+            </p>
+            <ul className="space-y-2">
+              {[
+                { label: "Build vs Buy Score", desc: "Strategic 1–10 score per vendor" },
+                { label: "Integration Method", desc: "REST / SDK / WebSocket / Embedded" },
+                { label: "Estimated Days", desc: "Projected integration effort" },
+                { label: "Migration Complexity", desc: "Low / Medium / High / Critical" },
+                { label: "Deployment Options", desc: "Cloud / On-Prem / Hybrid / Edge" },
+              ].map((item) => (
+                <li key={item.label} className="flex items-start gap-2 text-xs">
+                  <span style={{ color: "#34d399", flexShrink: 0, marginTop: "1px" }}>›</span>
+                  <span>
+                    <span className="font-semibold text-white">{item.label}</span>
+                    <span style={{ color: "#64748b" }}> — {item.desc}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ────────────────────────────────────────────────────── */}
+      <div
+        className="rounded-xl px-6 py-4 flex items-center justify-center gap-2"
+        style={{ background: "#1e2433", border: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <Sparkles className="h-3.5 w-3.5" style={{ color: "#a78bfa" }} />
+        <p className="text-xs text-center" style={{ color: "#64748b" }}>
+          NICE MP CoE Agentic Platform · Next.js 15 · React 19 · TypeScript · Prisma · PostgreSQL · Claude Opus 4-6 + Sonnet 4-6
+        </p>
+        <Sparkles className="h-3.5 w-3.5" style={{ color: "#00d4e8" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Chip helper ────────────────────────────────────────────────────────── */
+function Chip({ color, icon: Icon, label }: { color: string; icon: React.ElementType; label: string }) {
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+      style={{ background: "#262d3d", color, border: `1px solid ${color}30` }}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
     </div>
   );
 }
