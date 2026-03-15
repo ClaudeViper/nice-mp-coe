@@ -386,6 +386,8 @@ function SliderRow({
 
 // ─── Section 1: Audio Generator ───────────────────────────────────────────────
 
+const TEXT_MAX = 5000;
+
 function AudioGeneratorSection() {
   const [text, setText] = useState("");
   const [voice, setVoice] = useState("default");
@@ -403,6 +405,17 @@ function AudioGeneratorSection() {
   } | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Auto-prefill from Text Generation page ("Use in TTS Lab" button)
+  useEffect(() => {
+    try {
+      const prefill = localStorage.getItem("tts-lab-prefill");
+      if (prefill) {
+        setText(prefill.slice(0, TEXT_MAX));
+        localStorage.removeItem("tts-lab-prefill");
+      }
+    } catch { /* localStorage not available */ }
+  }, []);
 
   const audioUrl = result ? `/api/tts/file/${encodeURIComponent(result.filename)}` : null;
 
@@ -456,15 +469,15 @@ function AudioGeneratorSection() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium" style={{ color: "#94a3b8" }}>Text</label>
-              <span className="text-xs" style={{ color: text.length > 450 ? "#f59e0b" : "rgba(148,163,184,0.4)" }}>
-                {text.length}/500
+              <span className="text-xs" style={{ color: text.length > TEXT_MAX * 0.9 ? "#f59e0b" : "rgba(148,163,184,0.4)" }}>
+                {text.length}/{TEXT_MAX}
               </span>
             </div>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 500))}
+              onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
               placeholder="Enter text to synthesize…"
-              rows={4}
+              rows={text.length > 200 ? 10 : 4}
               className="lab-input w-full resize-none rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
               style={{
                 background: "rgba(6,15,46,0.8)",
@@ -1987,18 +2000,6 @@ function ConversationGeneratorSection() {
   const [outputDir, setOutputDir]     = useState("~/audio_samples/conversations");
   const [title, setTitle]             = useState(SAMPLE_TRANSCRIPTS[0]!.id);
 
-  // Auto-prefill from Text Generation page ("Use in TTS Lab" button)
-  useEffect(() => {
-    try {
-      const prefill = localStorage.getItem("tts-lab-prefill");
-      if (prefill) {
-        setTranscript(prefill);
-        setTitle("generated-conversation");
-        localStorage.removeItem("tts-lab-prefill");
-      }
-    } catch { /* localStorage not available */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [status, setStatus]   = useState<"idle" | "running" | "done" | "error">("idle");
   const [progress, setProgress] = useState(0);
