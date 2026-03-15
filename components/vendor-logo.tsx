@@ -9,40 +9,35 @@ import { useState } from "react";
 interface VendorEntry {
   /** Primary domain for Clearbit & DDG favicon lookup */
   domain: string;
-  /** Background color for the logo container */
-  bg: string;
   /** Brand accent color used in letter-avatar fallback */
   color: string;
-  /** Inner padding (px) so the logo doesn't touch the container edge */
-  pad: number;
 }
 
 const VENDOR_MAP: Record<string, VendorEntry> = {
-  openai:        { domain: "openai.com",          bg: "#000000", color: "#10a37f", pad: 6 },
-  google:        { domain: "google.com",           bg: "#ffffff", color: "#4285F4", pad: 5 },
-  amazon:        { domain: "amazon.com",           bg: "#232f3e", color: "#ff9900", pad: 4 },
-  aws:           { domain: "amazon.com",           bg: "#232f3e", color: "#ff9900", pad: 4 },
-  microsoft:     { domain: "microsoft.com",        bg: "#ffffff", color: "#00a4ef", pad: 4 },
-  azure:         { domain: "microsoft.com",        bg: "#ffffff", color: "#00a4ef", pad: 4 },
-  assemblyai:    { domain: "assemblyai.com",       bg: "#1ED3B4", color: "#000000", pad: 7 },
-  deepgram:      { domain: "deepgram.com",         bg: "#101014", color: "#13ef95", pad: 7 },
-  rev:           { domain: "rev.com",              bg: "#0070f3", color: "#ffffff", pad: 7 },
-  "rev-ai":      { domain: "rev.com",              bg: "#0070f3", color: "#ffffff", pad: 7 },
-  speechmatics:  { domain: "speechmatics.com",     bg: "#1e293b", color: "#2563eb", pad: 7 },
-  elevenlabs:    { domain: "elevenlabs.io",         bg: "#000000", color: "#ffffff", pad: 7 },
-  resemble:      { domain: "resemble.ai",          bg: "#5046e5", color: "#ffffff", pad: 7 },
-  playht:        { domain: "play.ht",              bg: "#6d28d9", color: "#ffffff", pad: 7 },
-  cartesia:      { domain: "cartesia.ai",          bg: "#0a0a0a", color: "#6366f1", pad: 7 },
-  hume:          { domain: "hume.ai",              bg: "#1a1a2e", color: "#4f46e5", pad: 7 },
-  tavus:         { domain: "tavus.io",             bg: "#0f172a", color: "#d946ef", pad: 7 },
-  runway:        { domain: "runwayml.com",         bg: "#000000", color: "#666666", pad: 7 },
-  // Requested vendors
-  coqui:         { domain: "coqui.ai",             bg: "#1a1a1a", color: "#FBBF24", pad: 6 },
-  meta:          { domain: "meta.com",             bg: "#ffffff", color: "#0082FB", pad: 5 },
-  nvidia:        { domain: "nvidia.com",           bg: "#000000", color: "#76B900", pad: 5 },
-  vapi:          { domain: "vapi.ai",              bg: "#0f0f1a", color: "#7C3AED", pad: 6 },
-  retell:        { domain: "retellai.com",         bg: "#0f172a", color: "#EC4899", pad: 6 },
-  retellai:      { domain: "retellai.com",         bg: "#0f172a", color: "#EC4899", pad: 6 },
+  openai:        { domain: "openai.com",        color: "#10a37f" },
+  google:        { domain: "google.com",        color: "#4285F4" },
+  amazon:        { domain: "amazon.com",        color: "#ff9900" },
+  aws:           { domain: "amazon.com",        color: "#ff9900" },
+  microsoft:     { domain: "microsoft.com",     color: "#00a4ef" },
+  azure:         { domain: "microsoft.com",     color: "#00a4ef" },
+  assemblyai:    { domain: "assemblyai.com",    color: "#1ED3B4" },
+  deepgram:      { domain: "deepgram.com",      color: "#13ef95" },
+  rev:           { domain: "rev.com",           color: "#0070f3" },
+  "rev-ai":      { domain: "rev.com",           color: "#0070f3" },
+  speechmatics:  { domain: "speechmatics.com",  color: "#2563eb" },
+  elevenlabs:    { domain: "elevenlabs.io",      color: "#ffffff" },
+  resemble:      { domain: "resemble.ai",       color: "#5046e5" },
+  playht:        { domain: "play.ht",           color: "#6d28d9" },
+  cartesia:      { domain: "cartesia.ai",       color: "#6366f1" },
+  hume:          { domain: "hume.ai",           color: "#4f46e5" },
+  tavus:         { domain: "tavus.io",          color: "#d946ef" },
+  runway:        { domain: "runwayml.com",      color: "#666666" },
+  coqui:         { domain: "coqui.ai",          color: "#FBBF24" },
+  meta:          { domain: "meta.com",          color: "#0082FB" },
+  nvidia:        { domain: "nvidia.com",        color: "#76B900" },
+  vapi:          { domain: "vapi.ai",           color: "#7C3AED" },
+  retell:        { domain: "retellai.com",      color: "#EC4899" },
+  retellai:      { domain: "retellai.com",      color: "#EC4899" },
 };
 
 function resolveEntry(slug: string): VendorEntry | undefined {
@@ -76,14 +71,13 @@ type Stage = "clearbit" | "ddg" | "avatar";
 export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogoProps) {
   const [stage, setStage] = useState<Stage>("clearbit");
 
-  const entry     = resolveEntry(slug);
+  const entry      = resolveEntry(slug);
   const brandColor = entry?.color ?? "#00d4e8";
-  const bgColor    = entry?.bg    ?? "#0f172a";
 
   const advance = () =>
     setStage((s) => (s === "clearbit" ? "ddg" : "avatar"));
 
-  const baseStyle: React.CSSProperties = {
+  const containerStyle: React.CSSProperties = {
     width: size, height: size, minWidth: size, minHeight: size,
     borderRadius: 8,
     overflow: "hidden",
@@ -91,15 +85,15 @@ export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogo
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    background: bgColor,
+    background: "transparent",   // no app / brand background — pure logo
   };
 
-  // ── No entry → letter avatar straight away ───────────────────────────────
+  // ── No entry or image failed → letter avatar ─────────────────────────────
   if (!entry || stage === "avatar") {
     return (
       <div
         style={{
-          ...baseStyle,
+          ...containerStyle,
           background: `linear-gradient(135deg, ${brandColor}33 0%, ${brandColor}11 100%)`,
           border: `1.5px solid ${brandColor}44`,
           color: brandColor,
@@ -123,19 +117,17 @@ export function VendorLogo({ name, slug, size = 44, className = "" }: VendorLogo
       ? `https://logo.clearbit.com/${entry.domain}`
       : `https://icons.duckduckgo.com/ip3/${entry.domain}.ico`;
 
-  const inner = size - entry.pad * 2;
-
   return (
-    <div style={baseStyle} className={className}>
+    <div style={containerStyle} className={className}>
       <img
-        key={src}          /* force new element when src changes */
+        key={src}
         src={src}
         alt={`${name} logo`}
         loading="lazy"
-        width={inner}
-        height={inner}
+        width={size}
+        height={size}
         onError={advance}
-        style={{ width: inner, height: inner, objectFit: "contain" }}
+        style={{ width: size, height: size, objectFit: "contain" }}
       />
     </div>
   );
