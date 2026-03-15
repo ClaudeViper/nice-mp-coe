@@ -19,6 +19,8 @@ import {
   MessageSquare,
   X,
   ExternalLink,
+  LayoutGrid,
+  LayoutList,
 } from "lucide-react";
 import { VendorLogo } from "@/components/vendor-logo";
 import { GlossaryTerm } from "@/components/glossary-term";
@@ -257,6 +259,7 @@ export default function VendorsPage() {
   const [showFilters,     setShowFilters]     = useState(false);
   const [deploymentFilter,setDeploymentFilter]= useState<string[]>([]);
   const [statusFilter,    setStatusFilter]    = useState<string[]>([]);
+  const [viewMode,        setViewMode]        = useState<"card" | "grid">("card");
 
   // aria-live region for dynamic result count
   const [announcement, setAnnouncement] = useState("");
@@ -497,6 +500,41 @@ export default function VendorsPage() {
           </select>
           <ArrowUpDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} aria-hidden="true" />
         </div>
+
+        {/* View mode toggle */}
+        <div
+          className="flex items-center rounded-lg overflow-hidden"
+          role="group"
+          aria-label="Switch view mode"
+          style={{ border: "1px solid var(--border)" }}
+        >
+          <button
+            onClick={() => setViewMode("card")}
+            title="Card view"
+            aria-pressed={viewMode === "card"}
+            className="px-3 py-2 transition-all"
+            style={
+              viewMode === "card"
+                ? { background: "rgba(0,212,232,0.15)", color: "#00d4e8" }
+                : { background: "transparent", color: "var(--muted-foreground)" }
+            }
+          >
+            <LayoutList className="h-4 w-4" aria-hidden="true" />
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            title="Compact grid view"
+            aria-pressed={viewMode === "grid"}
+            className="px-3 py-2 transition-all"
+            style={
+              viewMode === "grid"
+                ? { background: "rgba(0,212,232,0.15)", color: "#00d4e8" }
+                : { background: "transparent", color: "var(--muted-foreground)" }
+            }
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       {/* Filter Panel */}
@@ -605,13 +643,13 @@ export default function VendorsPage() {
         </p>
       )}
 
-      {/* Vendor grid */}
-      {!loading && filteredVendors.length > 0 && (
+      {/* Vendor grid — card view */}
+      {!loading && filteredVendors.length > 0 && viewMode === "card" && (
         <div
           id="vendor-grid"
           role="region"
           aria-labelledby={`tab-${activeTab}`}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
         >
           {filteredVendors.map((vendor) => {
             const categories  = getVendorCategories(vendor);
@@ -735,6 +773,90 @@ export default function VendorsPage() {
                     </span>
                     <ScoreBadge score={vendor.niceCompatibility.buildVsBuyScore} />
                   </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Vendor grid — compact grid view */}
+      {!loading && filteredVendors.length > 0 && viewMode === "grid" && (
+        <div
+          id="vendor-grid"
+          role="region"
+          aria-labelledby={`tab-${activeTab}`}
+          className="grid gap-3 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10"
+        >
+          {filteredVendors.map((vendor) => {
+            const categories = getVendorCategories(vendor);
+            const aa         = getAA(vendor.slug);
+
+            return (
+              <div
+                key={vendor.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/vendors/${vendor.slug}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/vendors/${vendor.slug}`);
+                  }
+                }}
+                className="group glass-card rounded-xl p-3 flex flex-col items-center gap-2 text-center transition-all hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                style={{ minWidth: 0 }}
+                aria-label={`${vendor.name} — ${categories.join(", ")}`}
+                title={vendor.name}
+              >
+                {/* Logo */}
+                <VendorLogo name={vendor.name} slug={vendor.slug} size={40} />
+
+                {/* Name */}
+                <p
+                  className="w-full truncate text-xs font-semibold leading-tight"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {vendor.name}
+                </p>
+
+                {/* Category badges */}
+                <div className="flex flex-wrap justify-center gap-1">
+                  {categories.map((cat) => (
+                    <span
+                      key={cat}
+                      className="rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                      style={catColors[cat] ?? { background: "rgba(100,116,139,0.1)", color: "#94a3b8", border: "1px solid rgba(100,116,139,0.2)" }}
+                    >
+                      {cat}
+                    </span>
+                  ))}
+                </div>
+
+                {/* AA quality score */}
+                {aa && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none"
+                    style={{ background: "rgba(0,212,232,0.12)", color: "#00d4e8", border: "1px solid rgba(0,212,232,0.25)" }}
+                  >
+                    AA {aa.aa_quality_score}
+                  </span>
+                )}
+
+                {/* CXone status dot */}
+                {vendor.niceCompatibility && (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    title={`CXone: ${vendor.niceCompatibility.cxoneIntegrationStatus}`}
+                    style={{
+                      background:
+                        vendor.niceCompatibility.cxoneIntegrationStatus === "Certified"  ? "#00d4e8"
+                        : vendor.niceCompatibility.cxoneIntegrationStatus === "Compatible" ? "#00d4e8"
+                        : vendor.niceCompatibility.cxoneIntegrationStatus === "Not Compatible" ? "#ef4444"
+                        : "#a855f7",
+                    }}
+                    aria-label={`CXone status: ${vendor.niceCompatibility.cxoneIntegrationStatus}`}
+                  />
                 )}
               </div>
             );
