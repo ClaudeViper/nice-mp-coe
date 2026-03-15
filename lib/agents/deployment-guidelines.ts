@@ -78,7 +78,7 @@ Be specific, accurate, and practical. Use real API endpoint paths and real param
   // Agentic loop — keep going until Claude stops calling tools
   while (true) {
     const response = await client.messages.create({
-      model: "claude-opus-4-5",
+      model: "claude-opus-4-6",
       max_tokens: 4096,
       system: systemPrompt,
       tools: [{ type: "web_search_20250305" as const, name: "web_search" }],
@@ -94,20 +94,9 @@ Be specific, accurate, and practical. Use real API endpoint paths and real param
     if (response.stop_reason === "end_turn") break;
 
     if (response.stop_reason === "tool_use") {
-      // Build tool results and continue
-      const toolResults: Anthropic.ToolResultBlockParam[] = response.content
-        .filter((b) => b.type === "tool_use")
-        .map((b) => {
-          const toolUse = b as Anthropic.ToolUseBlock;
-          return {
-            type: "tool_result" as const,
-            tool_use_id: toolUse.id,
-            content: "Search executed.",
-          };
-        });
-
+      // Push the full assistant turn (includes tool_use + embedded tool_result
+      // blocks that the web_search_20250305 built-in tool already populated)
       messages.push({ role: "assistant", content: response.content });
-      messages.push({ role: "user", content: toolResults });
     } else {
       break;
     }
