@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     title?: string;
     agentVoice?: string;
     customerVoice?: string;
+    supervisorVoice?: string;
     speed?: number;
     emotion?: number;
     outputDir?: string;
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
     title = "conversation",
     agentVoice = "male-1",
     customerVoice = "female-1",
+    supervisorVoice = "british-f",
     speed = 1.0,
     emotion = 0.5,
     outputDir,
@@ -73,8 +75,9 @@ export async function POST(request: Request) {
         "--transcript",     JSON.stringify(transcript),
         "--title",          title,
         "--output-dir",     resolvedDir,
-        "--agent-voice",    agentVoice,
-        "--customer-voice", customerVoice,
+        "--agent-voice",      agentVoice,
+        "--customer-voice",   customerVoice,
+        "--supervisor-voice", supervisorVoice,
         "--speed",          String(speed),
         "--emotion",        String(emotion),
       ]);
@@ -109,7 +112,7 @@ export async function POST(request: Request) {
             String(lastResult.filename),
             fullText,
             Number(lastResult.duration_seconds),
-            `agent:${agentVoice} customer:${customerVoice}`,
+            `agent:${agentVoice} customer:${customerVoice} supervisor:${supervisorVoice}`,
           );
         }
         controller.close();

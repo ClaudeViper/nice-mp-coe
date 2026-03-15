@@ -93,9 +93,10 @@ def main():
                         help='JSON array of {speaker, text} objects, or @filename')
     parser.add_argument("--title",           default="conversation")
     parser.add_argument("--output-dir",      default="~/audio_samples/conversations")
-    parser.add_argument("--agent-voice",     default=AGENT_VOICE)
-    parser.add_argument("--customer-voice",  default=CUSTOMER_VOICE)
-    parser.add_argument("--speed",           type=float, default=1.0)
+    parser.add_argument("--agent-voice",      default=AGENT_VOICE)
+    parser.add_argument("--customer-voice",   default=CUSTOMER_VOICE)
+    parser.add_argument("--supervisor-voice", default="british-f")
+    parser.add_argument("--speed",            type=float, default=1.0)
     parser.add_argument("--emotion",         type=float, default=0.5)
     parser.add_argument("--pause-ms",        type=float, default=350.0)
     args = parser.parse_args()
@@ -126,7 +127,12 @@ def main():
         for i, utt in enumerate(utterances):
             speaker = str(utt.get("speaker", "agent")).lower()
             text    = str(utt.get("text", "")).strip()
-            voice   = args.agent_voice if speaker == "agent" else args.customer_voice
+            if speaker == "agent":
+                voice = args.agent_voice
+            elif speaker == "supervisor":
+                voice = args.supervisor_voice
+            else:
+                voice = args.customer_voice
 
             # Stream progress so the SSE route can forward it
             print(json.dumps({
@@ -144,6 +150,10 @@ def main():
             if speaker == "agent":
                 left_parts.extend([audio, pause])
                 right_parts.extend([silence, pause])
+            elif speaker == "supervisor":
+                # Supervisor is centered — appears on both channels
+                left_parts.extend([audio, pause])
+                right_parts.extend([audio, pause])
             else:
                 left_parts.extend([silence, pause])
                 right_parts.extend([audio, pause])

@@ -58,7 +58,7 @@ const AGENT_VOICE    = "male-1";    // Adam
 const CUSTOMER_VOICE = "female-1";  // Bella
 
 // ─── Sample conversation transcripts ──────────────────────────────────────────
-interface Utterance { speaker: "agent" | "customer"; text: string }
+interface Utterance { speaker: "agent" | "customer" | "supervisor"; text: string }
 interface SampleTranscript { id: string; title: string; category: string; utterances: Utterance[] }
 
 const SAMPLE_TRANSCRIPTS: SampleTranscript[] = [
@@ -125,7 +125,10 @@ const SAMPLE_TRANSCRIPTS: SampleTranscript[] = [
 ];
 
 function transcriptToText(utterances: Utterance[]): string {
-  return utterances.map((u) => `${u.speaker === "agent" ? "Agent" : "Customer"}: ${u.text}`).join("\n");
+  return utterances.map((u) => {
+    const label = u.speaker === "agent" ? "Agent" : u.speaker === "supervisor" ? "Supervisor" : "Customer";
+    return `${label}: ${u.text}`;
+  }).join("\n");
 }
 
 function parseTranscriptText(raw: string): Utterance[] {
@@ -133,10 +136,12 @@ function parseTranscriptText(raw: string): Utterance[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .flatMap((line): Utterance[] => {
-      const agentMatch    = /^agent\s*:\s*/i.exec(line);
-      const customerMatch = /^customer\s*:\s*/i.exec(line);
-      if (agentMatch)    return [{ speaker: "agent",    text: line.slice(agentMatch[0].length).trim() }];
-      if (customerMatch) return [{ speaker: "customer", text: line.slice(customerMatch[0].length).trim() }];
+      const agentMatch      = /^agent\s*:\s*/i.exec(line);
+      const customerMatch   = /^customer\s*:\s*/i.exec(line);
+      const supervisorMatch = /^supervisor\s*:\s*/i.exec(line);
+      if (agentMatch)      return [{ speaker: "agent",      text: line.slice(agentMatch[0].length).trim() }];
+      if (customerMatch)   return [{ speaker: "customer",   text: line.slice(customerMatch[0].length).trim() }];
+      if (supervisorMatch) return [{ speaker: "supervisor", text: line.slice(supervisorMatch[0].length).trim() }];
       return [];
     });
 }
@@ -408,17 +413,9 @@ function AudioGeneratorSection() {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Restore text on mount: prefill from Text Generation takes priority,
-  // otherwise restore whatever the user had typed before.
+  // Restore text from cache on mount
   useEffect(() => {
     try {
-      const prefill = localStorage.getItem("tts-lab-prefill");
-      if (prefill) {
-        setText(prefill.slice(0, TEXT_MAX));
-        localStorage.setItem(TTS_CACHE_KEY, prefill.slice(0, TEXT_MAX));
-        localStorage.removeItem("tts-lab-prefill");
-        return;
-      }
       const cached = localStorage.getItem(TTS_CACHE_KEY);
       if (cached) setText(cached);
     } catch { /* localStorage not available */ }
@@ -2005,14 +2002,30 @@ function AudioLibrarySection() {
 
 // ─── Section 4: Conversation Generator ────────────────────────────────────────
 
+const SUPERVISOR_VOICE = "british-f"; // Emma — distinct from Adam & Bella
+
 function ConversationGeneratorSection() {
-  const [transcript, setTranscript]   = useState(transcriptToText(SAMPLE_TRANSCRIPTS[0]!.utterances));
-  const [agentVoice, setAgentVoice]   = useState(AGENT_VOICE);
+  const [transcript, setTranscript]       = useState(transcriptToText(SAMPLE_TRANSCRIPTS[0]!.utterances));
+  const [agentVoice, setAgentVoice]       = useState(AGENT_VOICE);
   const [customerVoice, setCustomerVoice] = useState(CUSTOMER_VOICE);
-  const [speed, setSpeed]             = useState(1.0);
-  const [emotion, setEmotion]         = useState(0.5);
-  const [outputDir, setOutputDir]     = useState("~/audio_samples/conversations");
-  const [title, setTitle]             = useState(SAMPLE_TRANSCRIPTS[0]!.id);
+  const [supervisorVoice, setSupervisorVoice] = useState(SUPERVISOR_VOICE);
+  const [speed, setSpeed]                 = useState(1.0);
+  const [emotion, setEmotion]             = useState(0.5);
+  const [outputDir, setOutputDir]         = useState("~/audio_samples/conversations");
+  const [title, setTitle]                 = useState(SAMPLE_TRANSCRIPTS[0]!.id);
+
+  // Auto-prefill from Text Generation page ("Use in TTS Lab" button)
+  useEffect(() => {
+    try {
+      const prefill = localStorage.getItem("tts-lab-prefill");
+      if (prefill) {
+        setTranscript(prefill);
+        setTitle("generated-conversation");
+        localStorage.removeItem("tts-lab-prefill");
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const [status, setStatus]   = useState<"idle" | "running" | "done" | "error">("idle");
@@ -2048,7 +2061,7 @@ function ConversationGeneratorSection() {
     const res = await fetch("/api/tts/conversation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript: utterances, title, agentVoice, customerVoice, speed, emotion, outputDir }),
+      body: JSON.stringify({ transcript: utterances, title, agentVoice, customerVoice, supervisorVoice, speed, emotion, outputDir }),
     });
 
     if (!res.ok || !res.body) {
@@ -2099,9 +2112,11 @@ function ConversationGeneratorSection() {
     else         { void audioRef.current.play(); setPlaying(true); }
   };
 
-  const utterances = parseTranscriptText(transcript);
-  const agentLines    = utterances.filter((u) => u.speaker === "agent").length;
-  const customerLines = utterances.filter((u) => u.speaker === "customer").length;
+  const utterances       = parseTranscriptText(transcript);
+  const agentLines       = utterances.filter((u) => u.speaker === "agent").length;
+  const customerLines    = utterances.filter((u) => u.speaker === "customer").length;
+  const supervisorLines  = utterances.filter((u) => u.speaker === "supervisor").length;
+  const hasSupervisor    = supervisorLines > 0;
 
   return (
     <div className="space-y-5">
@@ -2143,6 +2158,7 @@ function ConversationGeneratorSection() {
                 <span className="ml-auto text-xs font-normal flex items-center gap-2">
                   <span style={{ color: "#7c3aed" }}>Agent ×{agentLines}</span>
                   <span style={{ color: "#00d4e8" }}>Customer ×{customerLines}</span>
+                  {hasSupervisor && <span style={{ color: "#f59e0b" }}>Supervisor ×{supervisorLines}</span>}
                 </span>
               )}
             </CardTitle>
@@ -2164,7 +2180,7 @@ function ConversationGeneratorSection() {
             </div>
 
             {/* Voice assignment */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid gap-3 ${hasSupervisor ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"}`}>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: "#94a3b8" }}>
                   <span className="h-2 w-2 rounded-full inline-block" style={{ background: "#7c3aed" }} />
@@ -2197,6 +2213,24 @@ function ConversationGeneratorSection() {
                   ))}
                 </select>
               </div>
+              {hasSupervisor && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: "#94a3b8" }}>
+                    <span className="h-2 w-2 rounded-full inline-block" style={{ background: "#f59e0b" }} />
+                    Supervisor voice
+                  </label>
+                  <select
+                    value={supervisorVoice}
+                    onChange={(e) => setSupervisorVoice(e.target.value)}
+                    className="lab-input w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                    style={{ background: "rgba(6,15,46,0.8)", border: "1px solid rgba(245,158,11,0.4)" }}
+                  >
+                    {VOICES.filter((v) => v.value !== "default").map((v) => (
+                      <option key={v.value} value={v.value}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <SliderRow label="Speed" min={0.5} max={2.0} step={0.05} value={speed} onChange={setSpeed} formatValue={(v) => `${v.toFixed(2)}×`} />
@@ -2241,7 +2275,7 @@ function ConversationGeneratorSection() {
           </CardHeader>
           <CardContent className="px-5 pb-5 space-y-4">
             {/* Stereo channel legend */}
-            <div className="flex items-center gap-4 rounded-lg px-4 py-2.5" style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}>
+            <div className="flex flex-wrap items-center gap-4 rounded-lg px-4 py-2.5" style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}>
               <span className="flex items-center gap-1.5 text-xs" style={{ color: "#94a3b8" }}>
                 <span className="h-2.5 w-4 rounded-sm inline-block" style={{ background: "#7c3aed" }} />
                 Left ch. = Agent
@@ -2250,6 +2284,12 @@ function ConversationGeneratorSection() {
                 <span className="h-2.5 w-4 rounded-sm inline-block" style={{ background: "#00d4e8" }} />
                 Right ch. = Customer
               </span>
+              {hasSupervisor && (
+                <span className="flex items-center gap-1.5 text-xs" style={{ color: "#94a3b8" }}>
+                  <span className="h-2.5 w-4 rounded-sm inline-block" style={{ background: "#f59e0b" }} />
+                  Both ch. = Supervisor
+                </span>
+              )}
             </div>
 
             {/* Progress */}
@@ -2348,7 +2388,12 @@ const LAB_TABS = [
 type LabTabId = typeof LAB_TABS[number]["id"];
 
 function LabTabs() {
-  const [active, setActive] = useState<LabTabId>("generator");
+  const [active, setActive] = useState<LabTabId>(() => {
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("tts-lab-prefill")) return "conversation";
+    } catch { /* ignore */ }
+    return "generator";
+  });
   return (
     <div className="space-y-5">
       {/* Tab bar */}
