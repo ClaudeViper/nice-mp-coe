@@ -109,15 +109,17 @@ export default function ReportsPage() {
 
       if (type === "VendorComparison") {
         const vendorRes = await fetch("/api/vendors");
-        if (vendorRes.ok) {
-          const vendors = await vendorRes.json() as Array<{ slug: string }>;
-          const slugs = vendors.map((v) => v.slug).filter(Boolean);
-          if (slugs.length >= 2) {
-            body = { type, vendorSlugs: slugs };
-          } else {
-            throw new Error("Need at least 2 tracked vendors to generate a Vendor Comparison report.");
-          }
+        if (!vendorRes.ok) {
+          throw new Error("Failed to fetch vendor list. Please try again.");
         }
+        const vendors = await vendorRes.json() as Array<{ slug: string }>;
+        const slugs = (Array.isArray(vendors) ? vendors : [])
+          .map((v) => v.slug)
+          .filter(Boolean);
+        if (slugs.length < 2) {
+          throw new Error("Need at least 2 tracked vendors to generate a Vendor Comparison report.");
+        }
+        body = { type, vendorSlugs: slugs };
       }
 
       const res = await fetch("/api/agents/report-generator", {

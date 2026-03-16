@@ -45,6 +45,137 @@ const TYPE_COLORS: Record<string, React.CSSProperties> = {
   IntegrationReadiness: { background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)" },
 };
 
+// ── Markdown block renderer ──────────────────────────────────────────────────
+
+type Block =
+  | { kind: "heading"; level: 1 | 2 | 3; text: string }
+  | { kind: "bullet"; text: string }
+  | { kind: "ordered"; text: string }
+  | { kind: "table"; rows: string[][] }
+  | { kind: "bold"; text: string }
+  | { kind: "blank" }
+  | { kind: "paragraph"; text: string };
+
+function parseBlocks(content: string): Block[] {
+  const lines = content.split("\n");
+  const blocks: Block[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Table: collect consecutive pipe lines
+    if (line.trimStart().startsWith("|")) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trimStart().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      // Parse each row into cells
+      const rows = tableLines
+        .filter((l) => !l.replace(/\|/g, "").replace(/-/g, "").replace(/:/g, "").trim() === false || !/^[\s|:\-]+$/.test(l))
+        .map((l) =>
+          l
+            .replace(/^\|/, "")
+            .replace(/\|$/, "")
+            .split("|")
+            .map((c) => c.trim())
+        );
+      // Remove separator rows (cells are all dashes/colons)
+      const dataRows = rows.filter((r) => !r.every((c) => /^[-:]+$/.test(c)));
+      if (dataRows.length > 0) blocks.push({ kind: "table", rows: dataRows });
+      continue;
+    }
+
+    if (line.startsWith("### ")) { blocks.push({ kind: "heading", level: 3, text: line.slice(4) }); i++; continue; }
+    if (line.startsWith("## ")) { blocks.push({ kind: "heading", level: 2, text: line.slice(3) }); i++; continue; }
+    if (line.startsWith("# ")) { blocks.push({ kind: "heading", level: 1, text: line.slice(2) }); i++; continue; }
+    if (line.startsWith("- ")) { blocks.push({ kind: "bullet", text: line.slice(2) }); i++; continue; }
+    if (line.match(/^\d+\. /)) { blocks.push({ kind: "ordered", text: line.replace(/^\d+\. /, "") }); i++; continue; }
+    if (line.startsWith("**") && line.endsWith("**") && line.length > 4) { blocks.push({ kind: "bold", text: line.slice(2, -2) }); i++; continue; }
+    if (line.trim() === "") { blocks.push({ kind: "blank" }); i++; continue; }
+    blocks.push({ kind: "paragraph", text: line });
+    i++;
+  }
+  return blocks;
+}
+
+function RenderedContent({ content }: { content: string }) {
+  const blocks = parseBlocks(content);
+
+  return (
+    <div className="space-y-1">
+      {blocks.map((block, i) => {
+        switch (block.kind) {
+          case "heading":
+            if (block.level === 1) return (
+              <h1 key={i} className="mt-6 mb-3 text-xl font-bold" style={{ color: "var(--foreground)" }}>
+                {block.text}
+              </h1>
+            );
+            if (block.level === 2) return (
+              <h2 key={i} className="mt-7 mb-3 text-lg font-bold pb-2" style={{ color: "var(--foreground)", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>
+                {block.text}
+              </h2>
+            );
+            return (
+              <h3 key={i} className="mt-5 mb-2 text-base font-semibold" style={{ color: "#00d4e8" }}>
+                {block.text}
+              </h3>
+            );
+          case "bullet":
+            return <li key={i} className="ml-5 text-sm leading-relaxed list-disc" style={{ color: "#334155" }}>{block.text}</li>;
+          case "ordered":
+            return <li key={i} className="ml-5 text-sm leading-relaxed list-decimal" style={{ color: "#334155" }}>{block.text}</li>;
+          case "bold":
+            return <p key={i} className="text-sm font-semibold mt-3" style={{ color: "var(--foreground)" }}>{block.text}</p>;
+          case "blank":
+            return <div key={i} className="h-2" />;
+          case "table":
+            return (
+              <div key={i} className="my-4 overflow-x-auto rounded-lg border" style={{ borderColor: "rgba(0,212,232,0.2)" }}>
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr style={{ background: "rgba(0,212,232,0.08)", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>
+                      {block.rows[0].map((cell, ci) => (
+                        <th
+                          key={ci}
+                          className="px-4 py-2.5 text-left font-semibold whitespace-nowrap"
+                          style={{ color: "#0f172a" }}
+                        >
+                          {cell}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.slice(1).map((row, ri) => (
+                      <tr
+                        key={ri}
+                        style={{
+                          borderBottom: ri < block.rows.length - 2 ? "1px solid rgba(0,0,0,0.06)" : undefined,
+                          background: ri % 2 === 0 ? "rgba(255,255,255,0.85)" : "rgba(248,250,252,0.9)",
+                        }}
+                      >
+                        {row.map((cell, ci) => (
+                          <td key={ci} className="px-4 py-2 align-top" style={{ color: "#334155" }}>
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          default:
+            return <p key={i} className="text-sm leading-relaxed" style={{ color: "#475569" }}>{block.text}</p>;
+        }
+      })}
+    </div>
+  );
+}
+
 export default function ReportDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -294,86 +425,7 @@ export default function ReportDetailPage() {
             </CardContent>
           ) : (
             <CardContent className="p-6">
-              <div className="prose-content space-y-1">
-                {report.content.split("\n").map((line, i) => {
-                  if (line.startsWith("### ")) return (
-                    <h3
-                      key={i}
-                      className="mt-5 mb-2 text-base font-semibold"
-                      style={{ color: "#00d4e8" }}
-                    >
-                      {line.slice(4)}
-                    </h3>
-                  );
-                  if (line.startsWith("## ")) return (
-                    <h2
-                      key={i}
-                      className="mt-7 mb-3 text-lg font-bold pb-2"
-                      style={{
-                        color: "var(--foreground)",
-                        borderBottom: "1px solid rgba(0,212,232,0.2)",
-                      }}
-                    >
-                      {line.slice(3)}
-                    </h2>
-                  );
-                  if (line.startsWith("# ")) return (
-                    <h1
-                      key={i}
-                      className="mt-6 mb-3 text-xl font-bold"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      {line.slice(2)}
-                    </h1>
-                  );
-                  if (line.startsWith("- ")) return (
-                    <li
-                      key={i}
-                      className="ml-5 text-sm leading-relaxed list-disc"
-                      style={{ color: "#475569" }}
-                    >
-                      {line.slice(2)}
-                    </li>
-                  );
-                  if (line.match(/^\d+\. /)) return (
-                    <li
-                      key={i}
-                      className="ml-5 text-sm leading-relaxed list-decimal"
-                      style={{ color: "#475569" }}
-                    >
-                      {line.replace(/^\d+\. /, "")}
-                    </li>
-                  );
-                  if (line.startsWith("|")) return (
-                    <code
-                      key={i}
-                      className="block text-xs px-3 py-1 font-mono rounded"
-                      style={{
-                        background: "rgba(6,15,46,0.4)",
-                        color: "#00d4e8",
-                        border: "1px solid rgba(0,212,232,0.1)",
-                      }}
-                    >
-                      {line}
-                    </code>
-                  );
-                  if (line.startsWith("**") && line.endsWith("**")) return (
-                    <p
-                      key={i}
-                      className="text-sm font-semibold mt-3"
-                      style={{ color: "var(--foreground)" }}
-                    >
-                      {line.replace(/\*\*/g, "")}
-                    </p>
-                  );
-                  if (line.trim() === "") return <div key={i} className="h-2" />;
-                  return (
-                    <p key={i} className="text-sm leading-relaxed" style={{ color: "#475569" }}>
-                      {line}
-                    </p>
-                  );
-                })}
-              </div>
+              <RenderedContent content={report.content} />
             </CardContent>
           )}
         </Card>
