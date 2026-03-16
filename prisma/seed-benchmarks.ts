@@ -31,6 +31,13 @@ const VENDORS = [
   { name: "VAPI", slug: "vapi", website: "https://vapi.ai", pricingUrl: "https://vapi.ai/pricing", docsUrl: "https://docs.vapi.ai" },
   { name: "Microsoft", slug: "microsoft", website: "https://www.microsoft.com", pricingUrl: null, docsUrl: null },
   { name: "Coqui", slug: "coqui", website: "https://coqui.ai", pricingUrl: null, docsUrl: null },
+  { name: "Mistral", slug: "mistral", website: "https://mistral.ai", pricingUrl: "https://mistral.ai/technology/#pricing", docsUrl: "https://docs.mistral.ai" },
+  { name: "Inworld", slug: "inworld", website: "https://inworld.ai", pricingUrl: "https://inworld.ai/pricing", docsUrl: "https://docs.inworld.ai" },
+  { name: "MiniMax", slug: "minimax", website: "https://www.minimaxi.com", pricingUrl: "https://www.minimaxi.com/pricing", docsUrl: "https://www.minimaxi.com/document/guides" },
+  { name: "Fish Audio", slug: "fishaudio", website: "https://fish.audio", pricingUrl: "https://fish.audio/pricing", docsUrl: "https://docs.fish.audio" },
+  { name: "Kokoro", slug: "kokoro", website: "https://huggingface.co/hexgrad/Kokoro-82M", pricingUrl: null, docsUrl: "https://huggingface.co/hexgrad/Kokoro-82M" },
+  { name: "Step", slug: "step", website: "https://www.stepfun.com", pricingUrl: null, docsUrl: "https://platform.stepfun.com/docs" },
+  { name: "xAI", slug: "xai", website: "https://x.ai", pricingUrl: "https://x.ai/api", docsUrl: "https://docs.x.ai" },
 ];
 
 // ─── Benchmark data ───────────────────────────────────────────────────────────
@@ -49,6 +56,25 @@ interface BenchmarkSeed {
 }
 
 const STT_BENCHMARKS: BenchmarkSeed[] = [
+  // ── AA-WER v2.0 (Artificial Analysis, Feb 2026) ──
+  // Composite: 50% AA-AgentTalk + 25% Earnings22-Cleaned-AA + 25% VoxPopuli-Cleaned-AA
+  { vendorSlug: "elevenlabs", modelName: "Scribe v2", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 2.3, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "elevenlabs", modelName: "Scribe v2", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 1.6, metricUnit: "%", dataset: "AA-AgentTalk", language: "en" },
+  { vendorSlug: "elevenlabs", modelName: "Scribe v2", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 4.1, metricUnit: "%", dataset: "Earnings22-Cleaned-AA", language: "en" },
+  { vendorSlug: "elevenlabs", modelName: "Scribe v2", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 1.8, metricUnit: "%", dataset: "VoxPopuli-Cleaned-AA", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 3 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 2.9, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 3 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 1.7, metricUnit: "%", dataset: "VoxPopuli-Cleaned-AA", language: "en" },
+  { vendorSlug: "mistral", modelName: "Voxtral Small", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 3.0, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "mistral", modelName: "Voxtral Small", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 1.8, metricUnit: "%", dataset: "VoxPopuli-Cleaned-AA", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 3.1, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 4.4, metricUnit: "%", dataset: "Earnings22-Cleaned-AA", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 3 Flash", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 3.2, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 3 Flash", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 2.5, metricUnit: "%", dataset: "AA-AgentTalk", language: "en" },
+  { vendorSlug: "assemblyai", modelName: "Universal-3 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 3.5, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "assemblyai", modelName: "Universal-3 Pro", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 2.3, metricUnit: "%", dataset: "AA-AgentTalk", language: "en" },
+  { vendorSlug: "nvidia", modelName: "Parakeet TDT 0.6B V3", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 3.9, metricUnit: "%", dataset: "AA-WER v2.0", language: "en" },
+  { vendorSlug: "nvidia", modelName: "Parakeet TDT 0.6B V3", benchmarkType: "STT", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/speech-to-text", metricName: "WER", metricValue: 4.9, metricUnit: "%", dataset: "Earnings22-Cleaned-AA", language: "en" },
+
   // ── WER - LibriSpeech test-clean ──
   { vendorSlug: "openai", modelName: "Whisper Large V3", benchmarkType: "STT", sourceName: "HuggingFace Open ASR Leaderboard", sourceUrl: "https://huggingface.co/spaces/hf-audio/open_asr_leaderboard", metricName: "WER", metricValue: 2.47, metricUnit: "%", dataset: "LibriSpeech test-clean", language: "en" },
   { vendorSlug: "nvidia", modelName: "Canary-1B", benchmarkType: "STT", sourceName: "HuggingFace Open ASR Leaderboard", sourceUrl: "https://huggingface.co/spaces/hf-audio/open_asr_leaderboard", metricName: "WER", metricValue: 1.84, metricUnit: "%", dataset: "LibriSpeech test-clean", language: "en" },
@@ -120,7 +146,32 @@ const STT_BENCHMARKS: BenchmarkSeed[] = [
 ];
 
 const TTS_BENCHMARKS: BenchmarkSeed[] = [
-  // ── ELO (TTS Arena) ──
+  // ── ELO (Artificial Analysis Speech Arena, 2026) ──
+  { vendorSlug: "inworld", modelName: "TTS-1.5-Max", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1160, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "minimax", modelName: "Speech 2.6 HD", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1156, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "elevenlabs", modelName: "v3", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1120, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Pro TTS", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1105, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Flash TTS", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1092, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "step", modelName: "Step TTS 2", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1085, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "fishaudio", modelName: "OpenAudio S1", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1074, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "amazon", modelName: "Polly Generative", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1060, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "kokoro", modelName: "82M v1.0", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1059, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "cartesia", modelName: "Sonic 3", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1048, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "openai", modelName: "TTS-1 HD", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1030, metricUnit: "score", dataset: "ALL", language: "en" },
+  { vendorSlug: "microsoft", modelName: "Azure Neural TTS", benchmarkType: "TTS", sourceName: "Artificial Analysis Speech Arena", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "ELO", metricValue: 1018, metricUnit: "score", dataset: "ALL", language: "en" },
+  // ── TTFA (Time to First Audio) - Artificial Analysis ──
+  { vendorSlug: "cartesia", modelName: "Sonic 3", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "TTFB", metricValue: 40, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "inworld", modelName: "TTS-1.5-Max", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "TTFB", metricValue: 240, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "kokoro", modelName: "82M v1.0", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "TTFB", metricValue: 220, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "fishaudio", modelName: "OpenAudio S1", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "TTFB", metricValue: 260, metricUnit: "ms", dataset: "ALL", language: "en" },
+  // ── Pricing (Artificial Analysis) ──
+  { vendorSlug: "kokoro", modelName: "82M v1.0", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "price_per_1m_chars", metricValue: 0.70, metricUnit: "$/1M chars", dataset: "ALL", language: "en" },
+  { vendorSlug: "inworld", modelName: "TTS-1.5-Max", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "price_per_1m_chars", metricValue: 10.0, metricUnit: "$/1M chars", dataset: "ALL", language: "en" },
+  { vendorSlug: "fishaudio", modelName: "OpenAudio S1", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "price_per_1m_chars", metricValue: 15.0, metricUnit: "$/1M chars", dataset: "ALL", language: "en" },
+  { vendorSlug: "cartesia", modelName: "Sonic 3", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "price_per_1m_chars", metricValue: 15.0, metricUnit: "$/1M chars", dataset: "ALL", language: "en" },
+  { vendorSlug: "minimax", modelName: "Speech 2.6 HD", benchmarkType: "TTS", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/text-to-speech/models", metricName: "price_per_1m_chars", metricValue: 100.0, metricUnit: "$/1M chars", dataset: "ALL", language: "en" },
+
+  // ── ELO (TTS Arena legacy) ──
   { vendorSlug: "elevenlabs", modelName: "Turbo V2.5", benchmarkType: "TTS", sourceName: "TTS Arena", sourceUrl: "https://huggingface.co/spaces/TTS-AGI/TTS-Arena", metricName: "ELO", metricValue: 1245, metricUnit: "score", dataset: "ALL", language: "en" },
   { vendorSlug: "openai", modelName: "TTS-1-HD", benchmarkType: "TTS", sourceName: "TTS Arena", sourceUrl: "https://huggingface.co/spaces/TTS-AGI/TTS-Arena", metricName: "ELO", metricValue: 1198, metricUnit: "score", dataset: "ALL", language: "en" },
   { vendorSlug: "azure", modelName: "Neural TTS HD", benchmarkType: "TTS", sourceName: "TTS Arena", sourceUrl: "https://huggingface.co/spaces/TTS-AGI/TTS-Arena", metricName: "ELO", metricValue: 1152, metricUnit: "score", dataset: "ALL", language: "en" },
@@ -170,6 +221,26 @@ const TTS_BENCHMARKS: BenchmarkSeed[] = [
 ];
 
 const V2V_BENCHMARKS: BenchmarkSeed[] = [
+  // ── Big Bench Audio (Artificial Analysis, 2026) — reasoning accuracy ──
+  { vendorSlug: "step", modelName: "Step-Audio R1.1 (Realtime)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 96.4, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+  { vendorSlug: "xai", modelName: "Grok Voice Agent", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 92.3, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Flash Native Audio Dialog Thinking", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 92.1, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+  { vendorSlug: "amazon", modelName: "Nova 2.0 Sonic", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 87.1, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+  { vendorSlug: "openai", modelName: "GPT Realtime (Aug 2025)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 83.3, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+  { vendorSlug: "openai", modelName: "GPT Realtime Mini (Oct 2025)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "task_completion_rate", metricValue: 80.0, metricUnit: "%", dataset: "Big Bench Audio", language: "en" },
+
+  // ── TTFA / E2E Latency (Artificial Analysis, 2026) ──
+  { vendorSlug: "google", modelName: "Gemini 2.5 Flash Native Audio Dialog Thinking", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "e2e_latency", metricValue: 630, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "xai", modelName: "Grok Voice Agent", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "e2e_latency", metricValue: 780, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "openai", modelName: "GPT Realtime Mini (Oct 2025)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "e2e_latency", metricValue: 810, metricUnit: "ms", dataset: "ALL", language: "en" },
+  { vendorSlug: "openai", modelName: "GPT Realtime (Aug 2025)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "e2e_latency", metricValue: 900, metricUnit: "ms", dataset: "ALL", language: "en" },
+
+  // ── Pricing (Artificial Analysis, 2026) ──
+  { vendorSlug: "step", modelName: "Step-Audio R1.1 (Realtime)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "price_per_minute", metricValue: 0.00107, metricUnit: "$/min", dataset: "ALL", language: "en" },
+  { vendorSlug: "amazon", modelName: "Nova 2.0 Sonic", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "price_per_minute", metricValue: 0.0045, metricUnit: "$/min", dataset: "ALL", language: "en" },
+  { vendorSlug: "google", modelName: "Gemini 2.5 Flash Native Audio Dialog Thinking", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "price_per_minute", metricValue: 0.00576, metricUnit: "$/min", dataset: "ALL", language: "en" },
+  { vendorSlug: "openai", modelName: "GPT Realtime Mini (Oct 2025)", benchmarkType: "V2V", sourceName: "Artificial Analysis", sourceUrl: "https://artificialanalysis.ai/models/speech-to-speech", metricName: "price_per_minute", metricValue: 0.10, metricUnit: "$/min", dataset: "ALL", language: "en" },
+
   // ── Task Completion Rate ──
   { vendorSlug: "openai", modelName: "GPT-4o Realtime", benchmarkType: "V2V", sourceName: "OpenAI Blog", sourceUrl: "https://openai.com/index/gpt-4o", metricName: "task_completion_rate", metricValue: 87.5, metricUnit: "%", dataset: "ALL", language: "en" },
   { vendorSlug: "google", modelName: "Gemini 2.0 Flash Live", benchmarkType: "V2V", sourceName: "Google AI Blog", sourceUrl: "https://ai.google.dev/gemini-api/docs/live", metricName: "task_completion_rate", metricValue: 82.0, metricUnit: "%", dataset: "ALL", language: "en" },
