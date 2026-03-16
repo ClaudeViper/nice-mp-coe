@@ -93,6 +93,29 @@ Be specific, accurate, and practical. Use real API endpoint paths and real param
   return finalText;
 }
 
+// ─── DB bootstrap ─────────────────────────────────────────────────────────────
+
+/**
+ * Ensure the deployment_guidelines table exists. Runs a cheap DDL only if the
+ * table is absent — safe to call on every request because IF NOT EXISTS is a no-op.
+ */
+async function ensureTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS deployment_guidelines (
+      id           TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      vendor_id    TEXT        NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+      product_slug TEXT,
+      content      TEXT        NOT NULL DEFAULT '',
+      status       TEXT        NOT NULL DEFAULT 'Completed',
+      generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      error_msg    TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (vendor_id, product_slug)
+    )
+  `);
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
 /**
@@ -137,6 +160,9 @@ export async function runDeploymentGuidelines(
       error: `Product "${productSlug}" not found for vendor "${vendorSlug}"`,
     };
   }
+
+  // Ensure the table exists (no-op if already there)
+  await ensureTable();
 
   // Mark as Generating
   const existing = await prisma.deploymentGuideline.upsert({

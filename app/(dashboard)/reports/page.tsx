@@ -122,6 +122,16 @@ export default function ReportsPage() {
         body = { type, vendorSlugs: slugs };
       }
 
+      if (type === "EvaluationSummary") {
+        const evalRes = await fetch("/api/evaluations?status=Completed&limit=1");
+        if (!evalRes.ok) throw new Error("Failed to fetch evaluations. Please try again.");
+        const evals = await evalRes.json() as Array<{ id: string }>;
+        if (!Array.isArray(evals) || evals.length === 0) {
+          throw new Error("No completed evaluations found. Run an evaluation first.");
+        }
+        body = { type, evaluationId: evals[0].id };
+      }
+
       const res = await fetch("/api/agents/report-generator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
