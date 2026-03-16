@@ -387,7 +387,7 @@ export default function DashboardPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-2">
-            NICE Agentic{" "}
+            NiCE Media Processing{" "}
             <span className="gradient-text">CoE</span>
           </h1>
           <p className="text-sm max-w-xl" style={{ color: "rgba(148,163,184,0.9)" }}>

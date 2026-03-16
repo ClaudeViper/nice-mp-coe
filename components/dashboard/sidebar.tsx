@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -52,6 +53,19 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [runningCount, setRunningCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    function fetchRunning() {
+      fetch("/api/evaluations?status=Running&limit=100")
+        .then((r) => r.json())
+        .then((data: unknown[]) => setRunningCount(Array.isArray(data) ? data.length : 0))
+        .catch(() => setRunningCount(0));
+    }
+    fetchRunning();
+    const interval = setInterval(fetchRunning, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="flex h-screen w-64 flex-col flex-shrink-0" style={{ background: "var(--sidebar)", borderRight: "1px solid var(--sidebar-border)" }}>
@@ -122,9 +136,18 @@ export function Sidebar() {
         <Zap className="h-3.5 w-3.5 flex-shrink-0" style={{ color: "#00d4e8" }} />
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white truncate">AI Agents Active</p>
-          <p className="text-xs" style={{ color: "rgba(0,212,232,0.7)" }}>3 evaluations running</p>
+          <p className="text-xs" style={{ color: "rgba(0,212,232,0.7)" }}>
+            {runningCount === null
+              ? "Loading…"
+              : runningCount === 0
+              ? "No evaluations running"
+              : `${runningCount} evaluation${runningCount !== 1 ? "s" : ""} running`}
+          </p>
         </div>
-        <div className="h-1.5 w-1.5 rounded-full flex-shrink-0 bg-emerald-400 animate-pulse" />
+        <div className={cn(
+          "h-1.5 w-1.5 rounded-full flex-shrink-0",
+          runningCount ? "bg-emerald-400 animate-pulse" : "bg-slate-500"
+        )} />
       </div>
 
       {/* ── Navigation ───────────────────────────────────────────────── */}

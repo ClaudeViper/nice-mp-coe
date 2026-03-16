@@ -7,8 +7,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NICE Agentic CoE — Media Processing",
-  description: "NICE AI-first Agentic Center of Excellence for Speech & Voice Evaluation",
+  title: "NiCE Media Processing CoE",
+  description: "NiCE Media Processing Center of Excellence for Speech & Voice Evaluation",
   icons: { icon: "/favicon.ico" },
 };
 
