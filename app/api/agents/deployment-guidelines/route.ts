@@ -24,8 +24,10 @@ export async function POST(request: Request) {
       status: result.status === "Failed" ? 500 : 200,
     });
   } catch (error) {
+    // Surface the real error message so UI shows actionable info
+    const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Agent run failed", detail: String(error) },
+      { error: msg },
       { status: 500 },
     );
   }
