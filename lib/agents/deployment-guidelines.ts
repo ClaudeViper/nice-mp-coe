@@ -13,7 +13,69 @@ export interface DeploymentGuidelinesResult {
   error?: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+interface RawGuideline {
+  id: string;
+  vendor_id: string;
+  product_slug: string | null;
+  content: string;
+  status: string;
+}
+
+// ─── DB helpers (raw SQL — avoids stale Prisma generated client) ──────────────
+
+async function ensureTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS deployment_guidelines (
+      id           TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      vendor_id    TEXT        NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+      product_slug TEXT,
+      content      TEXT        NOT NULL DEFAULT '',
+      status       TEXT        NOT NULL DEFAULT 'Completed',
+      generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      error_msg    TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (vendor_id, product_slug)
+    )
+  `);
+}
+
+async function upsertGenerating(vendorId: string, productSlug: string | null): Promise<string> {
+  // Use INSERT … ON CONFLICT to atomically create-or-update the row
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO deployment_guidelines (id, vendor_id, product_slug, content, status, generated_at, updated_at)
+     VALUES (gen_random_uuid()::text, $1, $2, '', 'Generating', now(), now())
+     ON CONFLICT (vendor_id, product_slug)
+     DO UPDATE SET status = 'Generating', error_msg = NULL, updated_at = now()`,
+    vendorId,
+    productSlug,
+  );
+
+  const rows = await prisma.$queryRawUnsafe<RawGuideline[]>(
+    `SELECT id FROM deployment_guidelines WHERE vendor_id = $1 AND product_slug IS NOT DISTINCT FROM $2`,
+    vendorId,
+    productSlug,
+  );
+  return rows[0].id;
+}
+
+async function markCompleted(id: string, content: string) {
+  await prisma.$executeRawUnsafe(
+    `UPDATE deployment_guidelines SET content=$1, status='Completed', error_msg=NULL, generated_at=now(), updated_at=now() WHERE id=$2`,
+    content,
+    id,
+  );
+}
+
+async function markFailed(id: string, errorMsg: string) {
+  await prisma.$executeRawUnsafe(
+    `UPDATE deployment_guidelines SET status='Failed', error_msg=$1, updated_at=now() WHERE id=$2`,
+    errorMsg,
+    id,
+  );
+}
+
+// ─── AI generation ────────────────────────────────────────────────────────────
 
 async function runSearchAndGenerate(
   vendorName: string,
@@ -69,10 +131,6 @@ List the 4-5 most common integration issues and their solutions.
 
 Be specific, accurate, and practical. Use real API endpoint paths and real parameter names where known.`;
 
-  // web_search_20250305 is a server-side tool — the API executes searches
-  // automatically and returns stop_reason "end_turn" with the final text.
-  // No manual agentic loop needed (pushing messages back with tool_use blocks
-  // would cause an API error because messages would end with "assistant" role).
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 8096,
@@ -86,103 +144,34 @@ Be specific, accurate, and practical. Use real API endpoint paths and real param
     .map((b) => (b as { type: "text"; text: string }).text)
     .join("\n");
 
-  if (!finalText) {
-    throw new Error("Agent produced no text output");
-  }
-
+  if (!finalText) throw new Error("Agent produced no text output");
   return finalText;
-}
-
-// ─── DB bootstrap ─────────────────────────────────────────────────────────────
-
-/**
- * Ensure the deployment_guidelines table exists. Runs a cheap DDL only if the
- * table is absent — safe to call on every request because IF NOT EXISTS is a no-op.
- */
-async function ensureTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS deployment_guidelines (
-      id           TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      vendor_id    TEXT        NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
-      product_slug TEXT,
-      content      TEXT        NOT NULL DEFAULT '',
-      status       TEXT        NOT NULL DEFAULT 'Completed',
-      generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      error_msg    TEXT,
-      created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (vendor_id, product_slug)
-    )
-  `);
 }
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
-/**
- * Generate or refresh deployment guidelines for a vendor or a specific product.
- *
- * @param vendorSlug  - vendor slug in the DB (required)
- * @param productSlug - product slug; pass null for vendor-level guidelines
- */
 export async function runDeploymentGuidelines(
   vendorSlug: string,
   productSlug: string | null = null,
 ): Promise<DeploymentGuidelinesResult> {
-  // Look up vendor
+  // Look up vendor using stable prisma models (vendor existed before generate)
   const vendor = await prisma.vendor.findUnique({
     where: { slug: vendorSlug },
-    include: {
-      products: true,
-      niceCompatibility: true,
-    },
+    include: { products: true, niceCompatibility: true },
   });
 
   if (!vendor) {
-    return {
-      vendor_slug: vendorSlug,
-      product_slug: productSlug,
-      status: "Failed",
-      guidelines_id: null,
-      error: `Vendor "${vendorSlug}" not found`,
-    };
+    return { vendor_slug: vendorSlug, product_slug: productSlug, status: "Failed", guidelines_id: null, error: `Vendor "${vendorSlug}" not found` };
   }
 
-  const product = productSlug
-    ? vendor.products.find((p) => p.slug === productSlug) ?? null
-    : null;
-
+  const product = productSlug ? vendor.products.find((p) => p.slug === productSlug) ?? null : null;
   if (productSlug && !product) {
-    return {
-      vendor_slug: vendorSlug,
-      product_slug: productSlug,
-      status: "Failed",
-      guidelines_id: null,
-      error: `Product "${productSlug}" not found for vendor "${vendorSlug}"`,
-    };
+    return { vendor_slug: vendorSlug, product_slug: productSlug, status: "Failed", guidelines_id: null, error: `Product "${productSlug}" not found for vendor "${vendorSlug}"` };
   }
 
-  // Ensure the table exists (no-op if already there)
+  // Ensure table exists and create/update the row via raw SQL
   await ensureTable();
-
-  // Mark as Generating
-  const existing = await prisma.deploymentGuideline.upsert({
-    where: {
-      vendorId_productSlug: {
-        vendorId: vendor.id,
-        productSlug: productSlug ?? null,
-      },
-    },
-    create: {
-      vendorId: vendor.id,
-      productSlug: productSlug ?? null,
-      content: "",
-      status: "Generating",
-    },
-    update: {
-      status: "Generating",
-      errorMsg: null,
-    },
-  });
+  const rowId = await upsertGenerating(vendor.id, productSlug);
 
   try {
     const content = await runSearchAndGenerate(
@@ -193,35 +182,11 @@ export async function runDeploymentGuidelines(
       vendor.niceCompatibility?.integrationMethod ?? null,
     );
 
-    const updated = await prisma.deploymentGuideline.update({
-      where: { id: existing.id },
-      data: {
-        content,
-        status: "Completed",
-        generatedAt: new Date(),
-        errorMsg: null,
-      },
-    });
-
-    return {
-      vendor_slug: vendorSlug,
-      product_slug: productSlug,
-      status: "Completed",
-      guidelines_id: updated.id,
-    };
+    await markCompleted(rowId, content);
+    return { vendor_slug: vendorSlug, product_slug: productSlug, status: "Completed", guidelines_id: rowId };
   } catch (err) {
     const msg = String(err);
-    await prisma.deploymentGuideline.update({
-      where: { id: existing.id },
-      data: { status: "Failed", errorMsg: msg },
-    });
-
-    return {
-      vendor_slug: vendorSlug,
-      product_slug: productSlug,
-      status: "Failed",
-      guidelines_id: existing.id,
-      error: msg,
-    };
+    await markFailed(rowId, msg);
+    return { vendor_slug: vendorSlug, product_slug: productSlug, status: "Failed", guidelines_id: rowId, error: msg };
   }
 }
