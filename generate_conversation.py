@@ -122,6 +122,7 @@ def main():
     left_parts: list[np.ndarray]  = []
     right_parts: list[np.ndarray] = []
     meta: list[dict]              = []
+    engine_name: str              = "unknown"
 
     try:
         for i, utt in enumerate(utterances):
@@ -144,6 +145,8 @@ def main():
 
             res   = generate_utterance(script_path, text, voice,
                                        args.speed, args.emotion, str(tmp_dir))
+            if engine_name == "unknown":
+                engine_name = res.get("engine", "unknown")
             audio = read_wav_mono(res["file_path"])
 
             silence = np.zeros_like(audio)
@@ -188,6 +191,7 @@ def main():
             "duration_seconds": round(total_secs, 2),
             "sample_rate":      SAMPLE_RATE,
             "channels":         2,
+            "engine":           engine_name,
             "utterance_count":  len(meta),
             "transcript":       meta,
         }), flush=True)

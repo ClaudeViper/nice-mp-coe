@@ -447,6 +447,7 @@ function AudioGeneratorSection() {
     duration_seconds: number;
     sample_rate: number;
     file_path: string;
+    engine?: string;
   } | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -689,7 +690,9 @@ function AudioGeneratorSection() {
                 style={{ background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.3)", color: "#94a3b8" }}
               >
                 <span style={{ color: "#64748b" }}>Engine: </span>
-                <span style={{ color: TTS_ENGINE.accent }}>{TTS_ENGINE.name}</span>
+                <span style={{ color: TTS_ENGINE.accent }}>
+                  {result.engine ? result.engine.charAt(0).toUpperCase() + result.engine.slice(1) + " TTS" : TTS_ENGINE.name}
+                </span>
               </span>
               {[
                 ["Voice", VOICES.find((v) => v.value === voice)?.label.split(" · ")[1] ?? voice],
@@ -2072,7 +2075,7 @@ function ConversationGeneratorSection() {
   const [currentSpeaker, setCurrentSpeaker] = useState("");
   const [result, setResult]   = useState<{
     filename: string; duration_seconds: number; utterance_count: number;
-    sample_rate: number; channels: number;
+    sample_rate: number; channels: number; engine?: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -2135,6 +2138,7 @@ function ConversationGeneratorSection() {
               utterance_count:  Number(obj.utterance_count),
               sample_rate:      Number(obj.sample_rate),
               channels:         Number(obj.channels),
+              engine:           obj.engine ? String(obj.engine) : undefined,
             });
             setStatus("done");
           }
@@ -2384,6 +2388,14 @@ function ConversationGeneratorSection() {
                     <p className="text-xs" style={{ color: "#64748b" }}>
                       {fmtDuration(result.duration_seconds)} · {result.utterance_count} turns · stereo {result.sample_rate} Hz
                     </p>
+                    {result.engine && (
+                      <p className="text-xs">
+                        <span style={{ color: "#64748b" }}>Engine: </span>
+                        <span style={{ color: "#a855f7", fontWeight: 600 }}>
+                          {result.engine.charAt(0).toUpperCase() + result.engine.slice(1)} TTS
+                        </span>
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="text-xs" style={{ color: "rgba(148,163,184,0.4)" }}>No conversation generated yet</p>

@@ -145,6 +145,7 @@ def main():
         "duration_seconds": round(duration, 4),
         "sample_rate": args.sample_rate,
         "format": args.format,
+        "engine": _backend,
         "voice": args.voice,
         "speed": args.speed,
         "emotion": args.emotion,
