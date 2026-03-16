@@ -259,26 +259,18 @@ function WaveformCanvas({
   audioRef?: React.RefObject<HTMLAudioElement | null>;
   playing?: boolean;
 }) {
-  const canvasRef        = useRef<HTMLCanvasElement>(null);
-  const staticDrawFnRef  = useRef<(() => void) | null>(null);
-  const analyserRef      = useRef<AnalyserNode | null>(null);
-  const sourceRef        = useRef<MediaElementAudioSourceNode | null>(null);
-  const audioCtxRef      = useRef<AudioContext | null>(null);
-  const rafRef           = useRef<number | null>(null);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const rafRef     = useRef<number | null>(null);
+  const [playhead, setPlayhead] = useState(0); // 0–1 fraction
 
-  // ── Static decoded waveform ──────────────────────────────────────────────
+  // ── Draw static waveform whenever audio changes ─────────────────────────
   useEffect(() => {
     if (!audioUrl || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx    = canvas.getContext("2d");
     if (!ctx) return;
-
     let cancelled = false;
-
-    // Reset Web Audio nodes so they're recreated against the new audio element
-    if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch { /* ok */ } sourceRef.current = null; }
-    if (audioCtxRef.current) { void audioCtxRef.current.close(); audioCtxRef.current = null; }
-    analyserRef.current = null;
+    setPlayhead(0);
 
     (async () => {
       try {
@@ -290,123 +282,57 @@ function WaveformCanvas({
 
         const data     = decoded.getChannelData(0);
         const barCount = 160;
+        const { width, height } = canvas;
+        const samplesPerBar = Math.floor(data.length / barCount);
 
-        const drawStatic = () => {
-          if (!canvasRef.current) return;
-          const cv = canvasRef.current;
-          const c  = cv.getContext("2d");
-          if (!c) return;
-          const { width, height } = cv;
-          const samplesPerBar = Math.floor(data.length / barCount);
-          c.clearRect(0, 0, width, height);
-          for (let i = 0; i < barCount; i++) {
-            let max = 0;
-            for (let j = 0; j < samplesPerBar; j++) {
-              max = Math.max(max, Math.abs(data[i * samplesPerBar + j] ?? 0));
-            }
-            const barH = Math.max(2, max * height * 0.88);
-            const x    = (i / barCount) * width;
-            const bw   = Math.max(1, width / barCount - 1.2);
-            const y    = (height - barH) / 2;
-            const grad = c.createLinearGradient(0, y, 0, y + barH);
-            grad.addColorStop(0,   "rgba(0,212,232,0.9)");
-            grad.addColorStop(0.5, "rgba(0,212,232,0.6)");
-            grad.addColorStop(1,   "rgba(124,58,237,0.7)");
-            c.fillStyle = grad;
-            c.beginPath();
-            c.roundRect(x, y, bw, barH, 1);
-            c.fill();
+        ctx.clearRect(0, 0, width, height);
+        for (let i = 0; i < barCount; i++) {
+          let max = 0;
+          for (let j = 0; j < samplesPerBar; j++) {
+            max = Math.max(max, Math.abs(data[i * samplesPerBar + j] ?? 0));
           }
-        };
-
-        staticDrawFnRef.current = drawStatic;
-        drawStatic();
+          const barH = Math.max(2, max * height * 0.88);
+          const x    = (i / barCount) * width;
+          const bw   = Math.max(1, width / barCount - 1.2);
+          const y    = (height - barH) / 2;
+          const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+          grad.addColorStop(0,   "rgba(0,212,232,0.9)");
+          grad.addColorStop(0.5, "rgba(0,212,232,0.6)");
+          grad.addColorStop(1,   "rgba(124,58,237,0.7)");
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.roundRect(x, y, bw, barH, 1);
+          ctx.fill();
+        }
         await tmpCtx.close();
       } catch {
-        staticDrawFnRef.current = null;
-        if (!cancelled && canvasRef.current) {
+        if (!cancelled && canvasRef.current)
           canvasRef.current.getContext("2d")?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        }
       }
     })();
 
     return () => { cancelled = true; };
   }, [audioUrl]);
 
-  // ── Live animation during playback ───────────────────────────────────────
+  // ── Playhead RAF loop ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!playing || !audioRef?.current || !canvasRef.current) {
-      // Stop RAF and restore static frame
+    if (!playing || !audioRef?.current) {
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-      staticDrawFnRef.current?.();
+      if (!playing) setPlayhead(0);
       return;
     }
 
-    // Create / resume AudioContext
-    if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-    const audioCtx = audioCtxRef.current;
-    if (audioCtx.state === "suspended") void audioCtx.resume();
-
-    // Wire up MediaElementSource → Analyser → Destination (once per element)
-    if (!sourceRef.current) {
-      try {
-        sourceRef.current = audioCtx.createMediaElementSource(audioRef.current);
-        analyserRef.current = audioCtx.createAnalyser();
-        analyserRef.current.fftSize = 512;
-        analyserRef.current.smoothingTimeConstant = 0.8;
-        sourceRef.current.connect(analyserRef.current);
-        analyserRef.current.connect(audioCtx.destination);
-      } catch {
-        // createMediaElementSource throws if element already attached elsewhere
-        return;
-      }
-    }
-
-    const analyser    = analyserRef.current!;
-    const canvas      = canvasRef.current;
-    const draw        = canvas.getContext("2d")!;
-    const bufLen      = analyser.frequencyBinCount;
-    const dataArray   = new Uint8Array(bufLen);
-    const barCount    = 80;
-
-    const animate = () => {
-      rafRef.current = requestAnimationFrame(animate);
-      analyser.getByteFrequencyData(dataArray);
-      const { width, height } = canvas;
-      draw.clearRect(0, 0, width, height);
-      const barWidth = width / barCount - 1.5;
-      const step     = Math.floor(bufLen / barCount);
-      for (let i = 0; i < barCount; i++) {
-        let sum = 0;
-        for (let k = 0; k < step; k++) sum += dataArray[i * step + k] ?? 0;
-        const avg  = sum / step / 255;
-        const barH = Math.max(3, avg * height * 0.92);
-        const x    = i * (barWidth + 1.5);
-        const y    = (height - barH) / 2;
-        const grad = draw.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0,   `rgba(0,212,232,${(0.6 + avg * 0.4).toFixed(2)})`);
-        grad.addColorStop(0.5, `rgba(0,212,232,${(0.4 + avg * 0.3).toFixed(2)})`);
-        grad.addColorStop(1,   `rgba(124,58,237,${(0.5 + avg * 0.4).toFixed(2)})`);
-        draw.fillStyle = grad;
-        draw.beginPath();
-        draw.roundRect(x, y, barWidth, barH, 2);
-        draw.fill();
-      }
+    const tick = () => {
+      const el = audioRef.current;
+      if (el && el.duration) setPlayhead(el.currentTime / el.duration);
+      rafRef.current = requestAnimationFrame(tick);
     };
-    animate();
+    tick();
 
     return () => {
       if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
     };
   }, [playing, audioRef]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      void audioCtxRef.current?.close();
-    };
-  }, []);
 
   if (!audioUrl) {
     return (
@@ -425,13 +351,26 @@ function WaveformCanvas({
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={640}
-      height={120}
-      className="block w-full rounded-lg"
-      style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)", height: "120px" }}
-    />
+    <div className="relative w-full rounded-lg overflow-hidden" style={{ height: 120 }}>
+      <canvas
+        ref={canvasRef}
+        width={640}
+        height={120}
+        className="block w-full h-full"
+        style={{ background: "rgba(6,15,46,0.6)", border: "1px solid rgba(0,212,232,0.15)" }}
+      />
+      {/* Playhead line */}
+      {playhead > 0 && (
+        <div
+          className="pointer-events-none absolute inset-y-0 w-px"
+          style={{
+            left: `${playhead * 100}%`,
+            background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0) 100%)",
+            boxShadow: "0 0 6px rgba(255,255,255,0.6)",
+          }}
+        />
+      )}
+    </div>
   );
 }
 
