@@ -105,10 +105,25 @@ export default function ReportsPage() {
     setGenerating(type);
     setError(null);
     try {
+      let body: Record<string, unknown> = { type };
+
+      if (type === "VendorComparison") {
+        const vendorRes = await fetch("/api/vendors");
+        if (vendorRes.ok) {
+          const vendors = await vendorRes.json() as Array<{ slug: string }>;
+          const slugs = vendors.map((v) => v.slug).filter(Boolean);
+          if (slugs.length >= 2) {
+            body = { type, vendorSlugs: slugs };
+          } else {
+            throw new Error("Need at least 2 tracked vendors to generate a Vendor Comparison report.");
+          }
+        }
+      }
+
       const res = await fetch("/api/agents/report-generator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(await res.text());
       const result = await res.json();
