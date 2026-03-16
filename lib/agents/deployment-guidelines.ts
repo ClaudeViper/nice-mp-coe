@@ -69,38 +69,22 @@ List the 4-5 most common integration issues and their solutions.
 
 Be specific, accurate, and practical. Use real API endpoint paths and real parameter names where known.`;
 
-  const messages: Anthropic.MessageParam[] = [
-    { role: "user", content: userPrompt },
-  ];
+  // web_search_20250305 is a server-side tool — the API executes searches
+  // automatically and returns stop_reason "end_turn" with the final text.
+  // No manual agentic loop needed (pushing messages back with tool_use blocks
+  // would cause an API error because messages would end with "assistant" role).
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 8096,
+    system: systemPrompt,
+    tools: [{ type: "web_search_20250305" as never, name: "web_search" }],
+    messages: [{ role: "user", content: userPrompt }],
+  });
 
-  let finalText = "";
-
-  // Agentic loop — keep going until Claude stops calling tools
-  while (true) {
-    const response = await client.messages.create({
-      model: "claude-opus-4-6",
-      max_tokens: 4096,
-      system: systemPrompt,
-      tools: [{ type: "web_search_20250305" as const, name: "web_search" }],
-      messages,
-    });
-
-    // Collect any text blocks
-    const textBlocks = response.content.filter((b) => b.type === "text");
-    if (textBlocks.length > 0) {
-      finalText = textBlocks.map((b) => (b as Anthropic.TextBlock).text).join("\n");
-    }
-
-    if (response.stop_reason === "end_turn") break;
-
-    if (response.stop_reason === "tool_use") {
-      // Push the full assistant turn (includes tool_use + embedded tool_result
-      // blocks that the web_search_20250305 built-in tool already populated)
-      messages.push({ role: "assistant", content: response.content });
-    } else {
-      break;
-    }
-  }
+  const finalText = response.content
+    .filter((b) => b.type === "text")
+    .map((b) => (b as { type: "text"; text: string }).text)
+    .join("\n");
 
   if (!finalText) {
     throw new Error("Agent produced no text output");
