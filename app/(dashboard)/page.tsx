@@ -31,8 +31,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DashboardStats {
   totalVendors: number;
+  vendorsThisMonth: number;
   totalBenchmarks: number;
+  benchmarksToday: number;
   totalNews: number;
+  newsLastUpdatedAt: string | null;
   totalEvaluations: number;
   agentLastRuns: Record<string, string | null>;
   recentEvaluations: Array<{
@@ -52,6 +55,18 @@ interface DashboardStats {
     metricUnit: string;
     benchmarkType: string;
   }>;
+}
+
+/** Returns a short relative time string, e.g. "3h ago", "2d ago", "just now" */
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 /** Formats an ISO timestamp as "Mar 15, 2026 · 14:32" */
@@ -429,10 +444,33 @@ export default function DashboardPage() {
         </div>
       ) : stats ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Vendors Tracked" value={stats.totalVendors} icon={Building2} color="#00d4e8" delta="+2 this month" />
-          <StatCard label="Benchmarks" value={stats.totalBenchmarks} icon={BarChart3} color="#7c3aed" delta="+48 today" />
-          <StatCard label="News Articles" value={stats.totalNews} icon={Newspaper} color="#10b981" delta="Updated 5m ago" />
-          <StatCard label="Evaluations Run" value={stats.totalEvaluations} icon={FlaskConical} color="#f59e0b" />
+          <StatCard
+            label="Vendors Tracked"
+            value={stats.totalVendors}
+            icon={Building2}
+            color="#00d4e8"
+            delta={stats.vendorsThisMonth > 0 ? `+${stats.vendorsThisMonth} this month` : undefined}
+          />
+          <StatCard
+            label="Benchmarks"
+            value={stats.totalBenchmarks}
+            icon={BarChart3}
+            color="#7c3aed"
+            delta={stats.benchmarksToday > 0 ? `+${stats.benchmarksToday} today` : undefined}
+          />
+          <StatCard
+            label="News Articles"
+            value={stats.totalNews}
+            icon={Newspaper}
+            color="#10b981"
+            delta={stats.newsLastUpdatedAt ? `Updated ${timeAgo(stats.newsLastUpdatedAt)}` : undefined}
+          />
+          <StatCard
+            label="Evaluations Run"
+            value={stats.totalEvaluations}
+            icon={FlaskConical}
+            color="#f59e0b"
+          />
         </div>
       ) : null}
 

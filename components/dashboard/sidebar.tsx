@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Vendors", href: "/vendors", icon: Building2 },
+  { name: "News Intelligence", href: "/news", icon: Newspaper },
   {
     name: "Benchmarks",
     icon: BarChart3,
@@ -34,9 +35,9 @@ const navigation = [
       { name: "STT", href: "/benchmarks/stt", icon: Mic },
       { name: "TTS", href: "/benchmarks/tts", icon: Volume2 },
       { name: "V2V", href: "/benchmarks/v2v", icon: AudioWaveform },
+      { name: "Standards", href: "/standards", icon: BookCheck },
     ],
   },
-  { name: "News Intelligence", href: "/news", icon: Newspaper },
   {
     name: "Generate Lab",
     icon: Wand2,
@@ -44,10 +45,9 @@ const navigation = [
       { name: "Text Generation", href: "/generate-lab/text-generation", icon: MessageSquareText },
       { name: "TTS Audio Lab", href: "/tts-audio-lab", icon: Waveform },
       { name: "Evaluate", href: "/evaluate", icon: FlaskConical },
+      { name: "Datasets", href: "/datasets", icon: Database },
     ],
   },
-  { name: "Datasets", href: "/datasets", icon: Database },
-  { name: "Standards", href: "/standards", icon: BookCheck },
   { name: "Reports", href: "/reports", icon: FileText },
 ];
 
