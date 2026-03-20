@@ -137,7 +137,7 @@ function RenderedContent({ content }: { content: string }) {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr style={{ background: "rgba(0,212,232,0.08)", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>
-                      {block.rows[0].map((cell, ci) => (
+                      {block.rows[0]?.map((cell, ci) => (
                         <th
                           key={ci}
                           className="px-4 py-2.5 text-left font-semibold whitespace-nowrap"
