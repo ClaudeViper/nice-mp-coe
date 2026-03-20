@@ -22,7 +22,7 @@ export function createAnthropicClient(): Anthropic {
     const dispatcher = new ProxyAgent(proxyUrl);
     return new Anthropic({
       apiKey,
-      fetchOptions: { dispatcher } as RequestInit,
+      fetchOptions: { dispatcher } as unknown as RequestInit,
     });
   }
   return new Anthropic({ apiKey });
