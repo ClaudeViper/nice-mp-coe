@@ -625,8 +625,8 @@ export default function ArchitecturePage() {
                       <tr key={f.name} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
                         <td className="px-4 py-1.5 flex items-center gap-1.5">
                           {f.pk && <Key style={{ width: 9, height: 9, color: "#fbbf24", flexShrink: 0 }} />}
-                          {f.fk && <Hash style={{ width: 9, height: 9, color: "#818cf8", flexShrink: 0 }} />}
-                          {!f.pk && !f.fk && <span style={{ width: 9 }} />}
+{'fk' in f && 'fk' in f && f.fk && <Hash style={{ width: 9, height: 9, color: "#818cf8", flexShrink: 0 }} />}
+{!f.pk && !('fk' in f && f.fk) && <span style={{ width: 9 }} />}
                           <span style={{ color: H3 }}>{f.name}</span>
                         </td>
                         <td className="px-4 py-1.5" style={{ color: entity.color }}>{f.type}</td>
