@@ -147,10 +147,9 @@ function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        className="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00d4e8]"
         style={{
           background: checked ? "#00d4e8" : "rgba(148,163,184,0.2)",
-          focusRingColor: "#00d4e8",
         }}
       >
         <span
