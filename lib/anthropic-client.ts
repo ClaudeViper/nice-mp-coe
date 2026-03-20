@@ -22,7 +22,8 @@ export function createAnthropicClient(): Anthropic {
     const dispatcher = new ProxyAgent(proxyUrl);
     return new Anthropic({
       apiKey,
-      fetchOptions: { dispatcher } as unknown as RequestInit,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fetchOptions: { dispatcher } as any,
     });
   }
   return new Anthropic({ apiKey });
