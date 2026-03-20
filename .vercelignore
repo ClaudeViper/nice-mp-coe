@@ -1,0 +1,19 @@
+# Tests
+__tests__/
+e2e/
+vitest.config.ts
+playwright.config.ts
+
+# Python scripts (not needed for Vercel)
+*.py
+requirements*.txt
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dev/CI files
+.github/
+.env
+.env.local
