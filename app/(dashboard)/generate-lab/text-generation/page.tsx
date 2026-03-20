@@ -219,12 +219,11 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition"
+        className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#00d4e8] transition"
         style={{
           background: "var(--card)",
           border: "1px solid var(--border)",
           color: "var(--foreground)",
-          focusRingColor: "#00d4e8",
         }}
       >
         {options.map((opt) => (
