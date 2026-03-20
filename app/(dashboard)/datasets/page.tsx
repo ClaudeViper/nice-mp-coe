@@ -378,16 +378,16 @@ function SamplesPanel({ dataset, onUpdated }: { dataset: Dataset; onUpdated: (d:
               </tr>
             ) : (
               filtered.map((sample, idx) => (
-                <Fragment key={(sample as Record<string, unknown>).id as string}>
-                  {editingId === (sample as Record<string, unknown>).id as string ? (
+                <Fragment key={(sample as unknown as Record<string, unknown>).id as string}>
+                  {editingId === (sample as unknown as Record<string, unknown>).id as string ? (
                     <tr>
                       <td colSpan={headers[dataset.type].length} className="px-4 py-3">
                         <SampleForm
                           type={dataset.type}
-                          initial={sample as Record<string, unknown>}
-                          onSave={(data) => handleUpdate((sample as Record<string, unknown>).id as string, data)}
+                          initial={sample as unknown as Record<string, unknown>}
+                          onSave={(data) => handleUpdate((sample as unknown as Record<string, unknown>).id as string, data)}
                           onCancel={() => setEditingId(null)}
-                          saving={savingId === (sample as Record<string, unknown>).id as string}
+                          saving={savingId === (sample as unknown as Record<string, unknown>).id as string}
                         />
                       </td>
                     </tr>
@@ -396,9 +396,9 @@ function SamplesPanel({ dataset, onUpdated }: { dataset: Dataset; onUpdated: (d:
                       sample={sample}
                       type={dataset.type}
                       idx={idx}
-                      onEdit={() => { setEditingId((sample as Record<string, unknown>).id as string); setAddingNew(false); }}
-                      onDelete={() => handleDelete((sample as Record<string, unknown>).id as string)}
-                      deleting={deletingId === (sample as Record<string, unknown>).id as string}
+                      onEdit={() => { setEditingId((sample as unknown as Record<string, unknown>).id as string); setAddingNew(false); }}
+                      onDelete={() => handleDelete((sample as unknown as Record<string, unknown>).id as string)}
+                      deleting={deletingId === (sample as unknown as Record<string, unknown>).id as string}
                     />
                   )}
                 </Fragment>
