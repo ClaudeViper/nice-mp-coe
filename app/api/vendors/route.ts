@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { ProductCategory } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const detail = searchParams.get("detail") === "true";
-    const type = searchParams.get("type"); // STT, TTS, V2V
+    const type = searchParams.get("type") as ProductCategory | null; // STT, TTS, V2V
 
     const vendors = await prisma.vendor.findMany({
       where: {
