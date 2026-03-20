@@ -62,13 +62,13 @@ function parseBlocks(content: string): Block[] {
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i] ?? "";
 
     // Table: collect consecutive pipe lines
     if (line.trimStart().startsWith("|")) {
       const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trimStart().startsWith("|")) {
-        tableLines.push(lines[i]);
+      while (i < lines.length && lines[i]!.trimStart().startsWith("|")) {
+        tableLines.push(lines[i]!);
         i++;
       }
       // Parse each row into cells
