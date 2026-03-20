@@ -873,8 +873,8 @@ function MarkdownContent({ content }: { content: string }) {
       const lang = line.slice(3).trim();
       const codeLines: string[] = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i]);
+      while (i < lines.length && !lines[i]!.startsWith("```")) {
+        codeLines.push(lines[i]!);
         i++;
       }
       elements.push(
@@ -886,8 +886,8 @@ function MarkdownContent({ content }: { content: string }) {
     } else if (line.startsWith("| ")) {
       // Table
       const tableLines: string[] = [];
-      while (i < lines.length && lines[i].startsWith("|")) {
-        if (!lines[i].match(/^\|[-| ]+\|$/)) tableLines.push(lines[i]);
+      while (i < lines.length && lines[i]!.startsWith("|")) {
+        if (!lines[i]!.match(/^\|[-| ]+\|$/)) tableLines.push(lines[i]!);
         i++;
       }
       const rows = tableLines.map((r) => r.split("|").filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map((c) => c.trim()));
@@ -897,7 +897,7 @@ function MarkdownContent({ content }: { content: string }) {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr>
-                  {rows[0].map((h, hi) => (
+                  {rows[0]?.map((h, hi) => (
                     <th key={hi} className="text-left px-3 py-1.5 font-semibold" style={{ background: "rgba(0,212,232,0.08)", color: "#00d4e8", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>{h}</th>
                   ))}
                 </tr>
