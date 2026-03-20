@@ -450,21 +450,21 @@ export default function DashboardPage() {
             value={stats.totalVendors}
             icon={Building2}
             color="#00d4e8"
-            delta={stats.vendorsThisMonth > 0 ? `+${stats.vendorsThisMonth} this month` : undefined}
+            {...(stats.vendorsThisMonth > 0 && { delta: `+${stats.vendorsThisMonth} this month` })}
           />
           <StatCard
             label="Benchmarks"
             value={stats.totalBenchmarks}
             icon={BarChart3}
             color="#7c3aed"
-            delta={stats.benchmarksToday > 0 ? `+${stats.benchmarksToday} today` : undefined}
+            {...(stats.benchmarksToday > 0 && { delta: `+${stats.benchmarksToday} today` })}
           />
           <StatCard
             label="News Articles"
             value={stats.totalNews}
             icon={Newspaper}
             color="#10b981"
-            delta={stats.newsLastUpdatedAt ? `Updated ${timeAgo(stats.newsLastUpdatedAt)}` : undefined}
+            {...(stats.newsLastUpdatedAt && { delta: `Updated ${timeAgo(stats.newsLastUpdatedAt)}` })}
           />
           <StatCard
             label="Evaluations Run"
