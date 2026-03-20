@@ -630,7 +630,7 @@ export default function ArchitecturePage() {
                           <span style={{ color: H3 }}>{f.name}</span>
                         </td>
                         <td className="px-4 py-1.5" style={{ color: entity.color }}>{f.type}</td>
-                        <td className="px-4 py-1.5" style={{ color: DIM }}>{f.note ?? ""}</td>
+                        <td className="px-4 py-1.5" style={{ color: DIM }}>{('note' in f ? f.note : '') ?? ""}</td>
                       </tr>
                     ))}
                   </tbody>
