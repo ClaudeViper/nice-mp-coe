@@ -377,7 +377,7 @@ async function callRealSTT(
   sampleIndex: number
 ): Promise<RealSTTResult> {
   const vendor  = detectVendor(config.endpointUrl ?? "");
-  const testAudio = STT_TEST_AUDIO[sampleIndex % STT_TEST_AUDIO.length];
+  const testAudio = STT_TEST_AUDIO[sampleIndex % STT_TEST_AUDIO.length]!;
   const start   = Date.now();
 
   try {
@@ -1008,16 +1008,16 @@ export async function runEvaluation(request: EvaluationRequest): Promise<Evaluat
     where: { OR: [{ slug: datasetId }, { name: datasetId }] },
   });
 
-  const sttSamples: STTSample[] = dbDataset && request.evaluationType === "STT" && Array.isArray(dbDataset.samples) && (dbDataset.samples as STTSample[]).length > 0
-    ? (dbDataset.samples as STTSample[])
+  const sttSamples: STTSample[] = dbDataset && request.evaluationType === "STT" && Array.isArray(dbDataset.samples) && (dbDataset.samples as unknown as STTSample[]).length > 0
+    ? (dbDataset.samples as unknown as STTSample[])
     : (STT_DATASETS[datasetId] ?? STT_DATASETS["NICE-CX-Clean-EN"] ?? NICE_CX_CLEAN_EN);
 
-  const ttsSamples: TTSSample[] = dbDataset && request.evaluationType === "TTS" && Array.isArray(dbDataset.samples) && (dbDataset.samples as TTSSample[]).length > 0
-    ? (dbDataset.samples as TTSSample[])
+  const ttsSamples: TTSSample[] = dbDataset && request.evaluationType === "TTS" && Array.isArray(dbDataset.samples) && (dbDataset.samples as unknown as TTSSample[]).length > 0
+    ? (dbDataset.samples as unknown as TTSSample[])
     : (TTS_DATASETS[datasetId] ?? TTS_DATASETS["NICE-TTS-IVR-EN"] ?? NICE_TTS_IVR_EN);
 
-  const v2vSamples: V2VSample[] = dbDataset && request.evaluationType === "V2V" && Array.isArray(dbDataset.samples) && (dbDataset.samples as V2VSample[]).length > 0
-    ? (dbDataset.samples as V2VSample[])
+  const v2vSamples: V2VSample[] = dbDataset && request.evaluationType === "V2V" && Array.isArray(dbDataset.samples) && (dbDataset.samples as unknown as V2VSample[]).length > 0
+    ? (dbDataset.samples as unknown as V2VSample[])
     : (V2V_DATASETS[datasetId] ?? V2V_DATASETS["NICE-V2V-Support-EN"] ?? NICE_V2V_SUPPORT_EN);
 
   const totalSamples =
