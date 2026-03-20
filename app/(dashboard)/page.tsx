@@ -208,10 +208,11 @@ interface AgentState {
 }
 
 function AgentCard({ agent, initialLastRun }: { agent: AgentDef; initialLastRun: string | null }) {
-  const [state, setState] = useState<AgentState>({
-    status: "idle",
-    lastRun: initialLastRun ?? undefined,
-  });
+  const [state, setState] = useState<AgentState>(
+    initialLastRun
+      ? { status: "idle", lastRun: initialLastRun }
+      : { status: "idle" },
+  );
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
