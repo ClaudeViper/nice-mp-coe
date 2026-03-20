@@ -861,7 +861,7 @@ function MarkdownContent({ content }: { content: string }) {
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i] ?? "";
 
     if (line.startsWith("# ")) {
       elements.push(<h1 key={i} className="text-lg font-bold mt-4 mb-2" style={{ color: "var(--foreground)" }}>{line.slice(2)}</h1>);
