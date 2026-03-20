@@ -56,7 +56,7 @@ async function upsertGenerating(vendorId: string, productSlug: string | null): P
     vendorId,
     productSlug,
   );
-  return rows[0].id;
+  return rows[0]!.id;
 }
 
 async function markCompleted(id: string, content: string) {
