@@ -2138,7 +2138,7 @@ function ConversationGeneratorSection() {
               utterance_count:  Number(obj.utterance_count),
               sample_rate:      Number(obj.sample_rate),
               channels:         Number(obj.channels),
-              engine:           obj.engine ? String(obj.engine) : undefined,
+              ...(obj.engine ? { engine: String(obj.engine) } : {}),
             });
             setStatus("done");
           }
