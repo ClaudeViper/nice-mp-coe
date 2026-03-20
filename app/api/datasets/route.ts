@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const type = searchParams.get("type") as BenchmarkType | null;
 
     const datasets = await prisma.evaluationDataset.findMany({
-      where: type ? { type } : undefined,
+      ...(type && { where: { type } }),
       orderBy: [{ type: "asc" }, { name: "asc" }],
     });
 
