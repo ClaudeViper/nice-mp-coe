@@ -119,7 +119,7 @@ function parseConversation(raw: string): ConversationTurn[] {
     } else if (supervisorMatch) {
       turns.push({ speaker: "SUPERVISOR", text: (supervisorMatch[1] ?? '').trim(), index: ++index });
     } else if (systemMatch) {
-      turns.push({ speaker: "SYSTEM", text: systemMatch[1].trim(), index: ++index });
+      turns.push({ speaker: "SYSTEM", text: (systemMatch[1] ?? '').trim(), index: ++index });
     } else if (line.trim() && turns.length > 0) {
       // continuation of previous turn
       turns[turns.length - 1].text += " " + line.trim();
