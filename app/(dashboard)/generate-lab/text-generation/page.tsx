@@ -113,11 +113,11 @@ function parseConversation(raw: string): ConversationTurn[] {
     const systemMatch = line.match(/^\[(.+)\]$/);
 
     if (agentMatch) {
-      turns.push({ speaker: "AGENT", text: agentMatch[1].trim(), index: ++index });
+      turns.push({ speaker: "AGENT", text: (agentMatch[1] ?? '').trim(), index: ++index });
     } else if (customerMatch) {
-      turns.push({ speaker: "CUSTOMER", text: customerMatch[1].trim(), index: ++index });
+      turns.push({ speaker: "CUSTOMER", text: (customerMatch[1] ?? '').trim(), index: ++index });
     } else if (supervisorMatch) {
-      turns.push({ speaker: "SUPERVISOR", text: supervisorMatch[1].trim(), index: ++index });
+      turns.push({ speaker: "SUPERVISOR", text: (supervisorMatch[1] ?? '').trim(), index: ++index });
     } else if (systemMatch) {
       turns.push({ speaker: "SYSTEM", text: systemMatch[1].trim(), index: ++index });
     } else if (line.trim() && turns.length > 0) {
