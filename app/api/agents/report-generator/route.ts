@@ -50,9 +50,9 @@ export async function POST(request: Request) {
 
     const result = await generateReport({
       type: body.type,
-      vendorSlugs: body.vendorSlugs,
-      evaluationId: body.evaluationId,
-      title: body.title,
+      ...(body.vendorSlugs && { vendorSlugs: body.vendorSlugs }),
+      ...(body.evaluationId && { evaluationId: body.evaluationId }),
+      ...(body.title && { title: body.title }),
     });
 
     return NextResponse.json(result);
