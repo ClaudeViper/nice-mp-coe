@@ -10,9 +10,7 @@ export async function GET() {
     : "NOT SET";
 
   try {
-    const client = new PrismaClient({
-      datasourceUrl: process.env.DATABASE_URL,
-    });
+    const client = new PrismaClient();
 
     info.clientKeys = Object.keys(client).filter(
       (k) => !k.startsWith("$") && !k.startsWith("_")
