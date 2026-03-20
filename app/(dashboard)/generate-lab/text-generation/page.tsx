@@ -122,7 +122,7 @@ function parseConversation(raw: string): ConversationTurn[] {
       turns.push({ speaker: "SYSTEM", text: (systemMatch[1] ?? '').trim(), index: ++index });
     } else if (line.trim() && turns.length > 0) {
       // continuation of previous turn
-      turns[turns.length - 1].text += " " + line.trim();
+      const lastTurn = turns[turns.length - 1]; if (lastTurn) lastTurn.text += " " + line.trim();
     }
   }
 
