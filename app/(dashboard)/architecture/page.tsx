@@ -83,7 +83,7 @@ const AGENTS = [
   },
 ];
 
-const DB_ENTITIES = [
+const DB_ENTITIES: { name: string; color: string; fields: { name: string; type: string; pk?: boolean; fk?: boolean; unique?: boolean; note?: string }[]; relations: string[] }[] = [
   {
     name: "Vendor",
     color: "#a78bfa",
