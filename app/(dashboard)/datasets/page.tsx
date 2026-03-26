@@ -206,7 +206,7 @@ function SampleRow({
   onDelete: () => void;
   deleting: boolean;
 }) {
-  const s = sample as Record<string, unknown>;
+  const s = sample as unknown as Record<string, unknown>;
   const rowStyle = idx % 2 === 0
     ? { background: "rgba(255,255,255,0.45)" }
     : { background: "rgba(255,255,255,0.25)" };
