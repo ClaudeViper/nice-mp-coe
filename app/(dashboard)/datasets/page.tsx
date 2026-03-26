@@ -384,7 +384,7 @@ function SamplesPanel({ dataset, onUpdated }: { dataset: Dataset; onUpdated: (d:
                       <td colSpan={headers[dataset.type].length} className="px-4 py-3">
                         <SampleForm
                           type={dataset.type}
-                          initial={sample as Record<string, unknown>}
+                          initial={sample as unknown as Record<string, unknown>}
                           onSave={(data) => handleUpdate((sample as unknown as Record<string, unknown>).id as string, data)}
                           onCancel={() => setEditingId(null)}
                           saving={savingId === (sample as unknown as Record<string, unknown>).id as string}
