@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+async function ensureTable() {
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SourceMethod') THEN
+        CREATE TYPE "SourceMethod" AS ENUM ('web_scrape','rss_feed','arxiv_api','reddit_api','api');
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SourceFrequency') THEN
+        CREATE TYPE "SourceFrequency" AS ENUM ('6h','daily');
+      END IF;
+    END $$;
+    CREATE TABLE IF NOT EXISTS "news_sources" (
+      "id"         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      "name"       TEXT NOT NULL UNIQUE,
+      "method"     "SourceMethod" NOT NULL DEFAULT 'web_scrape',
+      "url"        TEXT NOT NULL,
+      "frequency"  "SourceFrequency" NOT NULL DEFAULT '6h',
+      "keywords"   TEXT[] NOT NULL DEFAULT '{}',
+      "enabled"    BOOLEAN NOT NULL DEFAULT true,
+      "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+      "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS "news_sources_enabled_idx" ON "news_sources" ("enabled");
+  `);
+}
+
 export async function GET() {
   try {
+    await ensureTable();
     const sources = await prisma.newsSource.findMany({
       orderBy: { createdAt: "asc" },
     });
@@ -18,6 +44,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureTable();
     const body = await request.json();
 
     const source = await prisma.newsSource.create({
@@ -49,6 +76,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await ensureTable();
     const body = await request.json();
     const { id, ...data } = body;
 
@@ -80,6 +108,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await ensureTable();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
