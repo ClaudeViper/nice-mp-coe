@@ -18,6 +18,9 @@ import {
   FlaskConical,
   Globe,
   AlertCircle,
+  Clock,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -206,11 +209,25 @@ function NewsCard({ item }: { item: NewsItem }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
+interface RunLog {
+  id: string;
+  status: string;
+  found: number;
+  inserted: number;
+  duplicates: number;
+  sources_queried: number;
+  error: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
 export default function NewsPage() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [lastRun, setLastRun] = useState<RunLog | null>(null);
+  const [agentError, setAgentError] = useState<string | null>(null);
 
   const [activeCategory, setActiveCategory] = useState<NewsCategory | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,6 +235,16 @@ export default function NewsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
+
+  const fetchRunLog = useCallback(async () => {
+    try {
+      const res = await fetch("/api/agents/news-scout");
+      if (res.ok) {
+        const runs: RunLog[] = await res.json();
+        if (runs.length > 0) setLastRun(runs[0]);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const fetchNews = useCallback(async () => {
     setLoading(true);
@@ -242,13 +269,22 @@ export default function NewsPage() {
 
   useEffect(() => {
     fetchNews();
-  }, [fetchNews]);
+    fetchRunLog();
+  }, [fetchNews, fetchRunLog]);
 
   async function triggerAgent() {
     setRunning(true);
+    setAgentError(null);
     try {
-      await fetch("/api/agents/news-scout", { method: "POST" });
+      const res = await fetch("/api/agents/news-scout", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setAgentError(body.detail || body.error || `Agent failed (${res.status})`);
+      }
       await fetchNews();
+      await fetchRunLog();
+    } catch (e) {
+      setAgentError(String(e));
     } finally {
       setRunning(false);
     }
@@ -285,6 +321,57 @@ export default function NewsPage() {
           {running ? "Scouting..." : "Run News Scout"}
         </button>
       </div>
+
+      {/* Agent Error */}
+      {agentError && (
+        <div className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+          <XCircle className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: "#ef4444" }} />
+          <div>
+            <p className="font-medium" style={{ color: "#ef4444" }}>News Scout failed</p>
+            <p className="mt-1 text-xs" style={{ color: "rgba(239,68,68,0.8)" }}>{agentError}</p>
+          </div>
+          <button onClick={() => setAgentError(null)} className="ml-auto flex-shrink-0">
+            <X className="h-4 w-4" style={{ color: "rgba(239,68,68,0.5)" }} />
+          </button>
+        </div>
+      )}
+
+      {/* Last Run Info */}
+      {lastRun && (
+        <div className="flex items-center gap-4 rounded-xl px-4 py-2.5" style={{ background: "rgba(148,163,184,0.05)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center gap-2">
+            {lastRun.status === "completed" ? (
+              <CheckCircle2 className="h-4 w-4" style={{ color: "#10b981" }} />
+            ) : lastRun.status === "failed" ? (
+              <XCircle className="h-4 w-4" style={{ color: "#ef4444" }} />
+            ) : (
+              <RefreshCw className="h-4 w-4 animate-spin" style={{ color: "#00d4e8" }} />
+            )}
+            <span className="text-xs font-medium" style={{ color: lastRun.status === "completed" ? "#10b981" : lastRun.status === "failed" ? "#ef4444" : "#00d4e8" }}>
+              {lastRun.status === "completed" ? "Last run completed" : lastRun.status === "failed" ? "Last run failed" : "Running..."}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-xs" style={{ color: "var(--muted-foreground)" }}>
+            <Clock className="h-3 w-3" />
+            {lastRun.completed_at
+              ? relativeDate(lastRun.completed_at)
+              : relativeDate(lastRun.started_at)}
+          </div>
+          {lastRun.status === "completed" && (
+            <div className="flex items-center gap-3 text-xs" style={{ color: "var(--muted-foreground)" }}>
+              <span><span className="font-semibold" style={{ color: "#00d4e8" }}>{lastRun.found}</span> found</span>
+              <span><span className="font-semibold" style={{ color: "#10b981" }}>{lastRun.inserted}</span> new</span>
+              <span><span className="font-semibold" style={{ color: "#94a3b8" }}>{lastRun.duplicates}</span> duplicates</span>
+              <span><span className="font-semibold" style={{ color: "#94a3b8" }}>{lastRun.sources_queried}</span> queries</span>
+            </div>
+          )}
+          {lastRun.status === "failed" && lastRun.error && (
+            <span className="text-xs truncate max-w-[300px]" style={{ color: "rgba(239,68,68,0.7)" }} title={lastRun.error}>
+              {lastRun.error}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Stats Bar */}
       {items.length > 0 && (
