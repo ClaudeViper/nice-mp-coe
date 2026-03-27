@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
   eslint: { ignoreDuringBuilds: true },
   // Help Turbopack resolve Radix UI packages that use subpath exports
   transpilePackages: [

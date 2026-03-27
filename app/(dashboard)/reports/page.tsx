@@ -129,7 +129,7 @@ export default function ReportsPage() {
         if (!Array.isArray(evals) || evals.length === 0) {
           throw new Error("No completed evaluations found. Run an evaluation first.");
         }
-        body = { type, evaluationId: evals[0].id };
+        body = { type, evaluationId: evals[0]!.id };
       }
 
       const res = await fetch("/api/agents/report-generator", {

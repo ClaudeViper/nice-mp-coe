@@ -29,14 +29,18 @@ import { GlossaryTerm } from "@/components/glossary-term";
 // ─── AA benchmark data (loaded from static JSON) ──────────────────────────────
 
 interface AAModel {
-  vendor_slug:       string;
-  model_name:        string;
-  aa_quality_score:  number;
-  aa_speed_score:    number;
-  aa_price_per_hour: number;
-  aa_latency_ms:     number;
-  aa_rank:           number;
-  aa_source_url:     string;
+  vendor_slug:            string;
+  model_name:             string;
+  aa_quality_score:       number;
+  aa_speed_score:         number;
+  aa_rank:                number;
+  aa_source_url:          string;
+  aa_price_per_hour?:     number;
+  aa_latency_ms?:         number;
+  aa_price_per_1m_chars?: number;
+  aa_ttfa_ms?:            number;
+  aa_elo?:                number;
+  vendor_name?:           string;
 }
 
 // Inline the AA data so it's available without an extra API round-trip.
@@ -46,9 +50,9 @@ import ttsAA  from "@/data/benchmarks/artificialanalysis_tts.json";
 import s2sAA  from "@/data/benchmarks/artificialanalysis_s2s.json";
 
 const ALL_AA: AAModel[] = [
-  ...(sttAA.models  as AAModel[]),
-  ...(ttsAA.models  as AAModel[]),
-  ...(s2sAA.models  as AAModel[]),
+  ...(sttAA.models as unknown as AAModel[]),
+  ...(ttsAA.models as unknown as AAModel[]),
+  ...(s2sAA.models as unknown as AAModel[]),
 ];
 
 const AA_LAST_UPDATED = sttAA._meta.last_updated;

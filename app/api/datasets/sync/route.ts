@@ -11,12 +11,12 @@ import {
 } from "@/lib/agents/evaluation-runner";
 
 const BUILT_IN = [
-  { slug: "NICE-CX-Clean-EN",   type: "STT" as const, samples: NICE_CX_CLEAN_EN,    ...DATASET_CATALOG.STT[0] },
-  { slug: "NICE-CX-Noisy-EN",   type: "STT" as const, samples: NICE_CX_NOISY_EN,    ...DATASET_CATALOG.STT[1] },
-  { slug: "NICE-TTS-IVR-EN",    type: "TTS" as const, samples: NICE_TTS_IVR_EN,     ...DATASET_CATALOG.TTS[0] },
-  { slug: "NICE-TTS-Agent-EN",  type: "TTS" as const, samples: NICE_TTS_AGENT_EN,   ...DATASET_CATALOG.TTS[1] },
-  { slug: "NICE-V2V-Support-EN",type: "V2V" as const, samples: NICE_V2V_SUPPORT_EN, ...DATASET_CATALOG.V2V[0] },
-  { slug: "NICE-V2V-IVR-EN",    type: "V2V" as const, samples: NICE_V2V_IVR_EN,     ...DATASET_CATALOG.V2V[1] },
+  { slug: "NICE-CX-Clean-EN",   type: "STT" as const, ...DATASET_CATALOG.STT[0]!, samples: NICE_CX_CLEAN_EN },
+  { slug: "NICE-CX-Noisy-EN",   type: "STT" as const, ...DATASET_CATALOG.STT[1]!, samples: NICE_CX_NOISY_EN },
+  { slug: "NICE-TTS-IVR-EN",    type: "TTS" as const, ...DATASET_CATALOG.TTS[0]!, samples: NICE_TTS_IVR_EN },
+  { slug: "NICE-TTS-Agent-EN",  type: "TTS" as const, ...DATASET_CATALOG.TTS[1]!, samples: NICE_TTS_AGENT_EN },
+  { slug: "NICE-V2V-Support-EN",type: "V2V" as const, ...DATASET_CATALOG.V2V[0]!, samples: NICE_V2V_SUPPORT_EN },
+  { slug: "NICE-V2V-IVR-EN",    type: "V2V" as const, ...DATASET_CATALOG.V2V[1]!, samples: NICE_V2V_IVR_EN },
 ];
 
 export async function POST() {

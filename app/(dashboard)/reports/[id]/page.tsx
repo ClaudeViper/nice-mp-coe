@@ -62,13 +62,13 @@ function parseBlocks(content: string): Block[] {
   let i = 0;
 
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i] ?? "";
 
     // Table: collect consecutive pipe lines
     if (line.trimStart().startsWith("|")) {
       const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trimStart().startsWith("|")) {
-        tableLines.push(lines[i]);
+      while (i < lines.length && lines[i]!.trimStart().startsWith("|")) {
+        tableLines.push(lines[i]!);
         i++;
       }
       // Parse each row into cells
@@ -137,7 +137,7 @@ function RenderedContent({ content }: { content: string }) {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr style={{ background: "rgba(0,212,232,0.08)", borderBottom: "1px solid rgba(0,212,232,0.2)" }}>
-                      {block.rows[0].map((cell, ci) => (
+                      {block.rows[0]?.map((cell, ci) => (
                         <th
                           key={ci}
                           className="px-4 py-2.5 text-left font-semibold whitespace-nowrap"

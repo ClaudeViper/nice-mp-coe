@@ -1,4 +1,5 @@
 import { createAnthropicClient } from "@/lib/anthropic-client";
+import { prisma } from "@/lib/prisma";
 
 const client = createAnthropicClient();
 
@@ -10,6 +11,25 @@ export interface NewsSource {
   url: string;
   frequency: "6h" | "daily";
   keywords: string[] | "all";
+}
+
+// Load sources from DB; fall back to hardcoded defaults if the table is empty or missing.
+async function loadSources(): Promise<NewsSource[]> {
+  try {
+    const rows = await prisma.newsSource.findMany({ where: { enabled: true } });
+    if (rows.length > 0) {
+      return rows.map((r) => ({
+        name: r.name,
+        method: r.method.replace("_", "_") as NewsSource["method"],
+        url: r.url,
+        frequency: r.frequency === "six_hours" ? "6h" : "daily",
+        keywords: r.keywords.length === 0 ? "all" : r.keywords,
+      }));
+    }
+  } catch {
+    // Table may not exist yet — fall through to defaults
+  }
+  return NEWS_SOURCES;
 }
 
 export const NEWS_SOURCES: NewsSource[] = [
@@ -183,7 +203,8 @@ function buildSearchQueries(sources: NewsSource[]): { query: string; sourceName:
 
 export async function runNewsScout(baseUrl: string): Promise<NewsScoutResult> {
   const allItems: NewsItemOutput[] = [];
-  const queries = buildSearchQueries(NEWS_SOURCES);
+  const sources = await loadSources();
+  const queries = buildSearchQueries(sources);
 
   // Process queries in parallel batches of 3
   const BATCH_SIZE = 3;
