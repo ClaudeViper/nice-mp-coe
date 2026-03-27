@@ -21,13 +21,22 @@ import {
   AudioWaveform as Waveform,
   Wand2,
   MessageSquareText,
+  Settings2,
+  Rss,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Vendors", href: "/vendors", icon: Building2 },
-  { name: "News Intelligence", href: "/news", icon: Newspaper },
+  {
+    name: "News Intelligence",
+    icon: Newspaper,
+    children: [
+      { name: "Feed", href: "/news", icon: Rss },
+      { name: "Sources", href: "/news/sources", icon: Settings2 },
+    ],
+  },
   {
     name: "Benchmarks",
     icon: BarChart3,

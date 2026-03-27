@@ -38,6 +38,36 @@ model NewsItem {
   @@map("news_items")
 }
 
+// ─── News Sources ─────────────────────────────────────────────────────────────
+
+enum SourceMethod {
+  web_scrape
+  rss_feed
+  arxiv_api
+  reddit_api
+  api
+}
+
+enum SourceFrequency {
+  six_hours  @map("6h")
+  daily
+}
+
+model NewsSource {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  method    SourceMethod    @default(web_scrape)
+  url       String
+  frequency SourceFrequency @default(six_hours)
+  keywords  String[]
+  enabled   Boolean         @default(true)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@index([enabled])
+  @@map("news_sources")
+}
+
 // ─── Benchmarks ──────────────────────────────────────────────────────────────
 
 enum BenchmarkType {
