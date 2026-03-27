@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { Info, TrendingUp } from "lucide-react";
 import { BenchmarkTable } from "@/components/dashboard/benchmark-table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Tooltip,
   TooltipTrigger,
@@ -145,6 +148,134 @@ function DataCell({
   );
 }
 
+// ── Our Results metric reference data ────────────────────────────────────────
+
+const OUR_METRICS = [
+  {
+    label: "Word Error Rate (WER)",
+    name: "WER",
+    description: "Percentage of words transcribed incorrectly relative to the reference transcript.",
+    howMeasured: "Computed as (substitutions + deletions + insertions) / total reference words × 100.",
+    goodThreshold: "< 20%",
+  },
+  {
+    label: "Modified WER (mWER)",
+    name: "mWER",
+    description: "Modified WER adjusts traditional WER to better reflect clean-read transcription quality. It normalizes formatting differences like punctuation and capitalization, and reduces penalties for readability-oriented improvements such as disfluency removal.",
+    howMeasured: "Standard WER applied after normalizing punctuation, casing, and common disfluencies.",
+    goodThreshold: "< 8%",
+  },
+  {
+    label: "Entity Score",
+    name: "Entity Score",
+    description: "A composite metric averaging three internal tests evaluating recognition of company names, product names, industry-specific jargon, and company identification at the start of a call where little surrounding context is available.",
+    howMeasured: "Average accuracy across three entity-recognition test sets using real CCaaS audio.",
+    goodThreshold: "> 85%",
+  },
+  {
+    label: "Voicebot Low-Context Score",
+    name: "Voicebot Score",
+    description: "A composite metric averaging three voicebot-oriented tests: yes/no responses, spoken names, and spoken numbers. Measures recognition accuracy in short utterances where little surrounding context is available.",
+    howMeasured: "Average accuracy across yes/no, spoken-name, and spoken-number test sets.",
+    goodThreshold: "> 75%",
+  },
+];
+
+// ── Our Results banner ────────────────────────────────────────────────────────
+
+const TEAL = {
+  accent: "#2dd4bf",
+  bg: "rgba(45,212,191,0.15)",
+  border: "rgba(45,212,191,0.3)",
+};
+
+function OurResultsBanner({ showMetricRef, onToggleMetricRef }: { showMetricRef: boolean; onToggleMetricRef: () => void }) {
+  return (
+    <>
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 mb-6"
+        style={{ background: "linear-gradient(135deg,#0a2e2e 0%,#0f4c4c 60%,#0a3d3d 100%)" }}
+      >
+        <div className="absolute inset-0 dot-grid opacity-30" />
+        <div
+          className="absolute -top-10 -right-10 h-48 w-48 rounded-full opacity-10"
+          style={{ background: `radial-gradient(circle,${TEAL.accent},transparent)` }}
+        />
+        <div className="relative z-10 flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="rounded-full px-3 py-1 text-xs font-bold"
+                style={{ background: TEAL.bg, color: TEAL.accent, border: `1px solid ${TEAL.border}` }}
+              >
+                Internal
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold text-white">NiCE Internal STT Evaluation</h2>
+            <p className="mt-1 text-sm max-w-2xl" style={{ color: "rgba(148,163,184,0.85)" }}>
+              Results from internal testing against real contact center data, including telephony audio,
+              business-specific entities, and voicebot use cases. These benchmarks are a more reliable
+              signal for CCaaS performance than publicly available leaderboards.
+            </p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={onToggleMetricRef}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.15)" }}
+            >
+              <Info className="h-4 w-4" />
+              {showMetricRef ? "Hide" : "Metric"} Reference
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showMetricRef && (
+        <Card className="glass-card border-0 mb-6">
+          <CardContent className="p-0">
+            <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--border)" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: TEAL.accent }} />
+              <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
+                Internal Evaluation Metrics Reference
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Metric</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Description</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>How Measured</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--muted-foreground)" }}>Good Threshold</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {OUR_METRICS.map((m) => (
+                    <tr key={m.name} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td className="px-4 py-2.5">
+                        <span className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{m.label}</span>
+                        <span className="ml-1 text-xs font-mono" style={{ color: "var(--muted-foreground)" }}>({m.name})</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs" style={{ color: "var(--muted-foreground)" }}>{m.description}</td>
+                      <td className="px-4 py-2.5 text-xs" style={{ color: "var(--muted-foreground)" }}>{m.howMeasured}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}>
+                          {m.goodThreshold}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+}
+
 // ── Our Results table ─────────────────────────────────────────────────────────
 
 function OurResultsTable() {
@@ -245,6 +376,8 @@ function OurResultsTable() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function STTBenchmarksPage() {
+  const [showMetricRef, setShowMetricRef] = useState(false);
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6 p-6">
@@ -267,6 +400,7 @@ export default function STTBenchmarksPage() {
           </TabsList>
 
           <TabsContent value="our-results" className="mt-4">
+            <OurResultsBanner showMetricRef={showMetricRef} onToggleMetricRef={() => setShowMetricRef(v => !v)} />
             <OurResultsTable />
           </TabsContent>
 
