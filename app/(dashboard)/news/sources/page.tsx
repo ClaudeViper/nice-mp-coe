@@ -68,6 +68,7 @@ export default function NewsSourcesPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
   const [form, setForm] = useState<FormData>({
     name: "",
     method: "web_scrape",
@@ -86,6 +87,15 @@ export default function NewsSourcesPage() {
   }, []);
 
   useEffect(() => { fetchSources(); }, [fetchSources]);
+
+  async function seedDefaults() {
+    setSeeding(true);
+    try {
+      await fetch("/api/news/sources/seed", { method: "POST" });
+      await fetchSources();
+    } catch { /* ignore */ }
+    setSeeding(false);
+  }
 
   function resetForm() {
     setForm({ name: "", method: "web_scrape", url: "", frequency: "six_hours", keywords: "", enabled: true });
@@ -178,14 +188,25 @@ export default function NewsSourcesPage() {
             Configure which sources the News Scout agent monitors. Changes take effect on the next agent run.
           </p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110"
-          style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={seedDefaults}
+            disabled={seeding}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
+            style={{ border: "1px solid var(--border)", color: "var(--foreground)" }}
+          >
+            <Rss className="h-4 w-4" />
+            {seeding ? "Loading..." : "Load Defaults"}
+          </button>
+          <button
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
         >
           <Plus className="h-4 w-4" />
           Add Source
         </button>
+        </div>
       </div>
 
       {/* ── Stats ─────────────────────────────────────────────────────────── */}
@@ -307,7 +328,16 @@ export default function NewsSourcesPage() {
         <div className="text-center py-16">
           <Rss className="h-12 w-12 mx-auto mb-4" style={{ color: "rgba(148,163,184,0.3)" }} />
           <p className="text-slate-400 text-lg font-medium">No sources configured</p>
-          <p className="text-sm text-slate-500 mt-1">Add your first news source to get started.</p>
+          <p className="text-sm text-slate-500 mt-1">Add your first news source or load the built-in defaults.</p>
+          <button
+            onClick={seedDefaults}
+            disabled={seeding}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
+          >
+            <Rss className="h-4 w-4" />
+            {seeding ? "Loading defaults..." : "Load Default Sources (16)"}
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
