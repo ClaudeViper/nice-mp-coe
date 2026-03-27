@@ -53,10 +53,14 @@ const FREQUENCIES = [
 ];
 
 const inputStyle = {
-  background: "var(--secondary)",
-  border: "1px solid var(--border)",
-  color: "var(--foreground)",
+  background: "rgba(15,18,25,0.6)",
+  border: "1px solid rgba(148,163,184,0.12)",
+  color: "rgba(226,232,240,0.9)",
 };
+
+const DIM = "rgba(148,163,184,0.5)";
+const BODY = "rgba(203,213,225,0.85)";
+const HEADING = "rgba(241,245,249,0.95)";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -180,11 +184,11 @@ export default function NewsSourcesPage() {
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Settings2 className="h-7 w-7" style={{ color: "#00d4e8" }} />
+          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: HEADING }}>
+            <Settings2 className="h-7 w-7" style={{ color: "rgba(0,212,232,0.7)" }} />
             News Sources
           </h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(148,163,184,0.7)" }}>
+          <p className="text-sm mt-1" style={{ color: DIM }}>
             Configure which sources the News Scout agent monitors. Changes take effect on the next agent run.
           </p>
         </div>
@@ -193,35 +197,35 @@ export default function NewsSourcesPage() {
             onClick={seedDefaults}
             disabled={seeding}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all hover:bg-white/5 disabled:opacity-50"
-            style={{ border: "1px solid var(--border)", color: "var(--foreground)" }}
+            style={{ border: "1px solid rgba(148,163,184,0.15)", color: BODY }}
           >
             <Rss className="h-4 w-4" />
             {seeding ? "Loading..." : "Load Defaults"}
           </button>
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
-        >
-          <Plus className="h-4 w-4" />
-          Add Source
-        </button>
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all hover:brightness-110"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.8), rgba(0,212,232,0.8))", color: "rgba(255,255,255,0.95)" }}
+          >
+            <Plus className="h-4 w-4" />
+            Add Source
+          </button>
         </div>
       </div>
 
       {/* ── Stats ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total Sources", value: sources.length, color: "#94a3b8" },
-          { label: "Active", value: enabledCount, color: "#10b981" },
-          { label: "Disabled", value: sources.length - enabledCount, color: "#ef4444" },
+          { label: "Total Sources", value: sources.length, color: "rgba(148,163,184,0.7)" },
+          { label: "Active", value: enabledCount, color: "rgba(16,185,129,0.75)" },
+          { label: "Disabled", value: sources.length - enabledCount, color: "rgba(239,68,68,0.65)" },
         ].map((stat) => (
           <div
             key={stat.label}
             className="rounded-xl px-5 py-4"
-            style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+            style={{ background: "rgba(15,18,25,0.5)", border: "1px solid rgba(148,163,184,0.1)" }}
           >
-            <p className="text-xs font-medium" style={{ color: "rgba(148,163,184,0.6)" }}>{stat.label}</p>
+            <p className="text-xs font-medium" style={{ color: DIM }}>{stat.label}</p>
             <p className="text-2xl font-bold mt-1" style={{ color: stat.color }}>{stat.value}</p>
           </div>
         ))}
@@ -229,19 +233,19 @@ export default function NewsSourcesPage() {
 
       {/* ── Add / Edit Form ───────────────────────────────────────────────── */}
       {showForm && (
-        <div className="rounded-xl p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <div className="rounded-xl p-6" style={{ background: "rgba(15,18,25,0.5)", border: "1px solid rgba(148,163,184,0.1)" }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold" style={{ color: HEADING }}>
               {editingId ? "Edit Source" : "Add New Source"}
             </h2>
-            <button onClick={resetForm} className="text-slate-400 hover:text-white">
+            <button onClick={resetForm} style={{ color: DIM }} className="hover:opacity-80">
               <X className="h-5 w-5" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-slate-400 mb-1 block">Source Name</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: DIM }}>Source Name</label>
               <input
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                 style={inputStyle}
@@ -251,7 +255,7 @@ export default function NewsSourcesPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-400 mb-1 block">URL</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: DIM }}>URL</label>
               <input
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                 style={inputStyle}
@@ -261,7 +265,7 @@ export default function NewsSourcesPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-400 mb-1 block">Method</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: DIM }}>Method</label>
               <select
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                 style={inputStyle}
@@ -274,7 +278,7 @@ export default function NewsSourcesPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-400 mb-1 block">Frequency</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: DIM }}>Frequency</label>
               <select
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none"
                 style={inputStyle}
@@ -287,8 +291,8 @@ export default function NewsSourcesPage() {
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs font-medium text-slate-400 mb-1 block">
-                Keywords <span className="text-slate-500">(comma-separated, leave empty for &quot;all&quot;)</span>
+              <label className="text-xs font-medium mb-1 block" style={{ color: DIM }}>
+                Keywords <span style={{ color: "rgba(148,163,184,0.35)" }}>(comma-separated, leave empty for &quot;all&quot;)</span>
               </label>
               <input
                 className="w-full rounded-lg px-3 py-2 text-sm outline-none"
@@ -303,16 +307,16 @@ export default function NewsSourcesPage() {
           <div className="flex justify-end gap-3 mt-5">
             <button
               onClick={resetForm}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
-              style={{ border: "1px solid var(--border)" }}
+              className="rounded-lg px-4 py-2 text-sm font-medium hover:opacity-80 transition-colors"
+              style={{ border: "1px solid rgba(148,163,184,0.15)", color: DIM }}
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !form.name.trim() || !form.url.trim()}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all hover:brightness-110 disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.8), rgba(0,212,232,0.8))", color: "rgba(255,255,255,0.95)" }}
             >
               <Save className="h-4 w-4" />
               {saving ? "Saving..." : editingId ? "Update" : "Add Source"}
@@ -323,53 +327,53 @@ export default function NewsSourcesPage() {
 
       {/* ── Sources List ──────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="text-center py-16 text-slate-500">Loading sources...</div>
+        <div className="text-center py-16" style={{ color: DIM }}>Loading sources...</div>
       ) : sources.length === 0 ? (
         <div className="text-center py-16">
-          <Rss className="h-12 w-12 mx-auto mb-4" style={{ color: "rgba(148,163,184,0.3)" }} />
-          <p className="text-slate-400 text-lg font-medium">No sources configured</p>
-          <p className="text-sm text-slate-500 mt-1">Add your first news source or load the built-in defaults.</p>
+          <Rss className="h-12 w-12 mx-auto mb-4" style={{ color: "rgba(148,163,184,0.2)" }} />
+          <p className="text-lg font-medium" style={{ color: BODY }}>No sources configured</p>
+          <p className="text-sm mt-1" style={{ color: DIM }}>Add your first news source or load the built-in defaults.</p>
           <button
             onClick={seedDefaults}
             disabled={seeding}
-            className="mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #7c3aed, #00d4e8)" }}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:brightness-110 disabled:opacity-50"
+            style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.8), rgba(0,212,232,0.8))", color: "rgba(255,255,255,0.95)" }}
           >
             <Rss className="h-4 w-4" />
             {seeding ? "Loading defaults..." : "Load Default Sources (16)"}
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {sources.map((source) => (
             <div
               key={source.id}
               className="rounded-xl px-5 py-4 flex items-center gap-4 group transition-all"
               style={{
-                background: "var(--card)",
-                border: `1px solid ${source.enabled ? "var(--border)" : "rgba(239,68,68,0.15)"}`,
-                opacity: source.enabled ? 1 : 0.6,
+                background: "rgba(15,18,25,0.4)",
+                border: `1px solid ${source.enabled ? "rgba(148,163,184,0.08)" : "rgba(239,68,68,0.1)"}`,
+                opacity: source.enabled ? 1 : 0.55,
               }}
             >
               {/* Icon */}
               <div
                 className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: source.enabled ? "rgba(0,212,232,0.1)" : "rgba(148,163,184,0.1)" }}
+                style={{ background: source.enabled ? "rgba(0,212,232,0.06)" : "rgba(148,163,184,0.06)" }}
               >
-                <Globe className="h-5 w-5" style={{ color: source.enabled ? "#00d4e8" : "#64748b" }} />
+                <Globe className="h-5 w-5" style={{ color: source.enabled ? "rgba(0,212,232,0.6)" : "rgba(100,116,139,0.5)" }} />
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white text-sm">{source.name}</span>
+                  <span className="font-semibold text-sm" style={{ color: HEADING }}>{source.name}</span>
                   {!source.enabled && (
-                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}>
+                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.08)", color: "rgba(239,68,68,0.6)" }}>
                       Disabled
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: "rgba(148,163,184,0.6)" }}>
+                <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: DIM }}>
                   <span className="flex items-center gap-1 truncate max-w-[300px]">
                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     {source.url}
@@ -386,26 +390,26 @@ export default function NewsSourcesPage() {
                       <span
                         key={kw}
                         className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded"
-                        style={{ background: "rgba(124,58,237,0.1)", color: "rgba(124,58,237,0.8)" }}
+                        style={{ background: "rgba(124,58,237,0.06)", color: "rgba(167,139,250,0.7)" }}
                       >
                         <Tag className="h-2.5 w-2.5" />
                         {kw}
                       </span>
                     ))}
                     {source.keywords.length > 6 && (
-                      <span className="text-xs text-slate-500">+{source.keywords.length - 6} more</span>
+                      <span className="text-xs" style={{ color: "rgba(148,163,184,0.35)" }}>+{source.keywords.length - 6} more</span>
                     )}
                   </div>
                 )}
                 {source.keywords.length === 0 && (
-                  <span className="text-xs mt-1 inline-block" style={{ color: "rgba(148,163,184,0.4)" }}>
+                  <span className="text-xs mt-1 inline-block" style={{ color: "rgba(148,163,184,0.3)" }}>
                     All keywords (broad scan)
                   </span>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => handleToggle(source)}
                   disabled={togglingId === source.id}
@@ -413,8 +417,8 @@ export default function NewsSourcesPage() {
                   title={source.enabled ? "Disable" : "Enable"}
                 >
                   {source.enabled
-                    ? <PowerOff className="h-4 w-4 text-amber-400" />
-                    : <Power className="h-4 w-4 text-emerald-400" />
+                    ? <PowerOff className="h-4 w-4" style={{ color: "rgba(251,191,36,0.6)" }} />
+                    : <Power className="h-4 w-4" style={{ color: "rgba(52,211,153,0.6)" }} />
                   }
                 </button>
                 <button
@@ -422,7 +426,7 @@ export default function NewsSourcesPage() {
                   className="p-2 rounded-lg hover:bg-white/5 transition-colors"
                   title="Edit"
                 >
-                  <Settings2 className="h-4 w-4 text-slate-400" />
+                  <Settings2 className="h-4 w-4" style={{ color: "rgba(148,163,184,0.45)" }} />
                 </button>
                 <button
                   onClick={() => handleDelete(source.id)}
@@ -430,7 +434,7 @@ export default function NewsSourcesPage() {
                   className="p-2 rounded-lg hover:bg-white/5 transition-colors"
                   title="Delete"
                 >
-                  <Trash2 className="h-4 w-4 text-red-400" />
+                  <Trash2 className="h-4 w-4" style={{ color: "rgba(239,68,68,0.5)" }} />
                 </button>
               </div>
             </div>
