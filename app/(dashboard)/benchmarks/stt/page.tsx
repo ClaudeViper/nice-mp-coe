@@ -36,6 +36,7 @@ const ROWS: ModelRow[] = [
   { name: "NVIDIA Parakeet TDT 0.6B v3",                  ccWer: 16.6, ccMwer: 7.5,  ptMwer: 16.4, entity: 84.3, voicebot: 65.9 },
   { name: "NVIDIA Canary 1B v2",                          ccWer: 21.9, ccMwer: 8.6,  ptMwer: "TBD", entity: 82.8, voicebot: 73.8 },
   { name: "NVIDIA Nemotron",                              ccWer: 25.8, ccMwer: 11.2, ptMwer: "N/A", entity: 82.5, voicebot: 54.9 },
+  { name: "Cohere Transcribe",                            ccWer: 17.7, ccMwer: 6.1,  ptMwer: "TBD", entity: "TBD", voicebot: "TBD" },
 ];
 
 function numericValues(rows: ModelRow[], key: keyof ModelRow): number[] {
