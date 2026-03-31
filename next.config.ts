@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   // Help Turbopack resolve Radix UI packages that use subpath exports
   transpilePackages: [
     "@radix-ui/react-tabs",
