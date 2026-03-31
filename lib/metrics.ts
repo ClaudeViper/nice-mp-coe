@@ -109,6 +109,36 @@ export const STT_METRICS: MetricDefinition[] = [
     lowerIsBetter: true,
     thresholdValue: 3,
   },
+  {
+    name: "mWER",
+    label: "Modified Word Error Rate",
+    description: "An internal metric designed to reflect clean-read transcription quality for CX workflows. Adjusts standard WER to reduce penalties for readability improvements and formatting differences that do not affect meaning.",
+    howMeasured: "Standard WER alignment with adjusted error counting — disfluency deletions are not penalized, formatting-only differences are excluded, and meaning-changing errors are fully counted.",
+    unit: "%",
+    goodThreshold: "<8% English contact center",
+    lowerIsBetter: true,
+    thresholdValue: 8,
+  },
+  {
+    name: "Entity Score",
+    label: "Entity Score",
+    description: "Composite metric measuring recognition accuracy for business-critical named entities including company names, product names, industry jargon, and call-opening identifiers where context is limited.",
+    howMeasured: "Average accuracy across three internal entity-recognition test sets using real CCaaS audio. Results quantified as percentage of correctly transcribed key phrases.",
+    unit: "%",
+    goodThreshold: ">85%",
+    lowerIsBetter: false,
+    thresholdValue: 85,
+  },
+  {
+    name: "Readability",
+    label: "Readability Score",
+    description: "Measures how usable and trustworthy a transcript is for human-facing contexts such as QA reviews, compliance audits, and agent assist. Evaluates punctuation, number formatting, capitalization, special formats, and semantic integrity.",
+    howMeasured: "Average score across multiple readability categories including punctuation and structure, number formatting, capitalization and style, special formats, and semantic integrity. Based on real conversational contact center data.",
+    unit: "%",
+    goodThreshold: ">80%",
+    lowerIsBetter: false,
+    thresholdValue: 80,
+  },
 ];
 
 // ─── TTS Metrics ─────────────────────────────────────────────────────────────
