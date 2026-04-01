@@ -439,7 +439,7 @@ function DetailedView({ results }: { results: BenchmarkResult[] }) {
       {/* Section jump links */}
       <div className="flex flex-wrap gap-2">
         {SECTIONS.map((s) => {
-          const count = results.filter((r) => s.metrics.includes(r.metricName)).length;
+          const count = results.filter((r) => (s.metrics as unknown as string[]).includes(r.metricName)).length;
           return (
             <button
               key={s.id}
@@ -467,7 +467,7 @@ function DetailedView({ results }: { results: BenchmarkResult[] }) {
 
       {/* One card per section */}
       {SECTIONS.map((section) => {
-        const sectionCount = results.filter((r) => section.metrics.includes(r.metricName)).length;
+        const sectionCount = results.filter((r) => (section.metrics as unknown as string[]).includes(r.metricName)).length;
         return (
           <div
             key={section.id}
