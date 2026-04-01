@@ -13,23 +13,62 @@ export interface NewsSource {
   keywords: string[] | "all";
 }
 
-// Load sources from DB; fall back to hardcoded defaults if the table is empty or missing.
+// Map a DB NewsSource row to the agent's NewsSource interface.
+function mapRow(r: {
+  name: string;
+  method: string;
+  url: string;
+  frequency: string;
+  keywords: string[];
+}): NewsSource {
+  return {
+    name: r.name,
+    method: r.method as NewsSource["method"],
+    url: r.url,
+    frequency: r.frequency === "six_hours" ? "6h" : "daily",
+    keywords: r.keywords.length === 0 ? "all" : r.keywords,
+  };
+}
+
+// Load sources from the database (managed via the UI).
+// • If the DB already has sources → use them exclusively; the UI is the
+//   single place where sources are managed.
+// • If the DB is empty → seed it with NEWS_SOURCES so they appear in the
+//   UI straight away, then return the freshly-inserted rows.
+// • If the DB is completely unreachable → fall back to NEWS_SOURCES as a
+//   last resort so the agent can still run.
 async function loadSources(): Promise<NewsSource[]> {
   try {
     const rows = await prisma.newsSource.findMany({ where: { enabled: true } });
+
     if (rows.length > 0) {
-      return rows.map((r) => ({
-        name: r.name,
-        method: r.method.replace("_", "_") as NewsSource["method"],
-        url: r.url,
-        frequency: r.frequency === "six_hours" ? "6h" : "daily",
-        keywords: r.keywords.length === 0 ? "all" : r.keywords,
-      }));
+      // UI has sources configured — use them and nothing else.
+      return rows.map(mapRow);
     }
+
+    // DB is empty: seed it with the built-in defaults so they are visible
+    // and editable in the UI from the very first run.
+    for (const source of NEWS_SOURCES) {
+      await prisma.newsSource
+        .create({
+          data: {
+            name:      source.name,
+            method:    source.method,
+            url:       source.url,
+            frequency: source.frequency === "6h" ? "six_hours" : "daily",
+            keywords:  source.keywords === "all" ? [] : source.keywords,
+            enabled:   true,
+          },
+        })
+        .catch(() => { /* ignore duplicate-name conflicts on repeated seeding */ });
+    }
+
+    const seeded = await prisma.newsSource.findMany({ where: { enabled: true } });
+    return seeded.map(mapRow);
   } catch {
-    // Table may not exist yet — fall through to defaults
+    // DB unreachable — fall back to hardcoded list as a last resort.
+    return NEWS_SOURCES;
   }
-  return NEWS_SOURCES;
 }
 
 export const NEWS_SOURCES: NewsSource[] = [

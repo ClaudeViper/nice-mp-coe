@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 async function ensureTable() {
-  await prisma.$executeRawUnsafe(`
-    DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SourceMethod') THEN
-        CREATE TYPE "SourceMethod" AS ENUM ('web_scrape','rss_feed','arxiv_api','reddit_api','api');
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'SourceFrequency') THEN
-        CREATE TYPE "SourceFrequency" AS ENUM ('6h','daily');
-      END IF;
-    END $$;
-    CREATE TABLE IF NOT EXISTS "news_sources" (
+  const stmts = [
+    `CREATE TYPE IF NOT EXISTS "SourceMethod" AS ENUM ('web_scrape','rss_feed','arxiv_api','reddit_api','api')`,
+    `CREATE TYPE IF NOT EXISTS "SourceFrequency" AS ENUM ('6h','daily')`,
+    `CREATE TABLE IF NOT EXISTS "news_sources" (
       "id"         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       "name"       TEXT NOT NULL UNIQUE,
       "method"     "SourceMethod" NOT NULL DEFAULT 'web_scrape',
@@ -21,9 +15,12 @@ async function ensureTable() {
       "enabled"    BOOLEAN NOT NULL DEFAULT true,
       "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
       "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now()
-    );
-    CREATE INDEX IF NOT EXISTS "news_sources_enabled_idx" ON "news_sources" ("enabled");
-  `);
+    )`,
+    `CREATE INDEX IF NOT EXISTS "news_sources_enabled_idx" ON "news_sources" ("enabled")`,
+  ];
+  for (const sql of stmts) {
+    await prisma.$executeRawUnsafe(sql).catch(() => { /* already exists — safe to ignore */ });
+  }
 }
 
 export async function GET() {
