@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 async function ensureTable() {
   const stmts = [
-    `CREATE TYPE IF NOT EXISTS "SourceMethod" AS ENUM ('web_scrape','rss_feed','arxiv_api','reddit_api','api')`,
-    `CREATE TYPE IF NOT EXISTS "SourceFrequency" AS ENUM ('6h','daily')`,
+    `DO $$ BEGIN CREATE TYPE "SourceMethod" AS ENUM ('web_scrape','rss_feed','arxiv_api','reddit_api','api'); EXCEPTION WHEN duplicate_object THEN null; END $$`,
+    `DO $$ BEGIN CREATE TYPE "SourceFrequency" AS ENUM ('6h','daily'); EXCEPTION WHEN duplicate_object THEN null; END $$`,
     `CREATE TABLE IF NOT EXISTS "news_sources" (
       "id"         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
       "name"       TEXT NOT NULL UNIQUE,

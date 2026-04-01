@@ -401,27 +401,6 @@ const LANGUAGE_TIERS = [
   },
 ];
 
-function parsePercent(val: string): number | null {
-  if (val === "—" || val === "N/A" || val === "TBD") return null;
-  return parseFloat(val.replace("%", ""));
-}
-
-function lowerBetterColor(val: string): string {
-  const num = parsePercent(val);
-  if (num === null) return "var(--muted-foreground)";
-  if (num <= 10) return "#10b981";
-  if (num <= 20) return "#f59e0b";
-  return "#ef4444";
-}
-
-function higherBetterColor(val: string): string {
-  const num = parsePercent(val);
-  if (num === null) return "var(--muted-foreground)";
-  if (num >= 90) return "#10b981";
-  if (num >= 80) return "#f59e0b";
-  return "#ef4444";
-}
-
 function improvementColor(val: string): string {
   if (val === "TBD" || val === "—") return "var(--muted-foreground)";
   return "#10b981";
