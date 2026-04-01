@@ -101,6 +101,56 @@ export default function StandardsPage() {
         ))}
       </div>
 
+      {/* Cost Calculation Methodology — STT only */}
+      {activeTab === "STT" && (
+        <Card className="glass-card border-0">
+          <CardContent className="p-5">
+            <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>
+              Cost Calculation Methodology
+            </h3>
+            <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>
+              Estimated costs are calculated using the following formula:
+            </p>
+            <div
+              className="rounded-lg px-4 py-3 mb-4 text-center font-mono text-xs font-semibold"
+              style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", color: "#7c3aed" }}
+            >
+              (AWS Machine Cost/hr ÷ Efficiency Factor) ÷ (Max Streams per Machine ÷ Streams per Call)
+            </div>
+            <div className="space-y-2.5">
+              {[
+                {
+                  term: "Max Streams per Machine",
+                  def: "The maximum number of concurrent streams a machine can process in each mode.",
+                },
+                {
+                  term: "Streams per Call",
+                  def: "Typically 2 (customer + agent channels), except Low-Latency mode which processes only the customer channel (1 stream), as the bot channel is known in advance.",
+                },
+                {
+                  term: "AWS Machine Cost/hr",
+                  def: "Applicable AWS instance cost with negotiated discounts applied.",
+                },
+                {
+                  term: "Efficiency Factor",
+                  def: "Accounts for expected idle time (e.g. lower overnight call volumes).",
+                },
+              ].map(({ term, def }) => (
+                <div key={term} className="flex gap-2 text-xs">
+                  <span className="shrink-0 font-semibold" style={{ color: "var(--foreground)", minWidth: 200 }}>
+                    {term}
+                  </span>
+                  <span style={{ color: "var(--muted-foreground)" }}>— {def}</span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 pt-3 text-xs italic" style={{ borderTop: "1px solid var(--border)", color: "var(--muted-foreground)" }}>
+              All costs represent compute only and exclude fixed infrastructure costs.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Full Reference Table */}
       <Card className="glass-card border-0">
         <CardHeader className="pb-3">

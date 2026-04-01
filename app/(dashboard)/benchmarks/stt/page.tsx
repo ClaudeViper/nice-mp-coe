@@ -524,13 +524,23 @@ function V11DeepDiveTab() {
                 </div>
                 <div className="space-y-2 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                   {[
-                    { label: "Latency",              value: mode.latency,     color: mode.latencyColor       },
-                    { label: "Cost",                 value: mode.cost,        color: mode.costColor          },
-                    { label: "Est. Cost / Audio Hr", value: mode.costPerHour, color: "var(--foreground)"     },
-                    { label: "Best For",             value: mode.bestFor,     color: "var(--foreground)"     },
+                    { label: "Latency",              value: mode.latency,     color: mode.latencyColor,   tooltip: undefined },
+                    { label: "Cost",                 value: mode.cost,        color: mode.costColor,      tooltip: undefined },
+                    { label: "Est. Cost / Audio Hr", value: mode.costPerHour, color: "var(--foreground)", tooltip: "Compute cost per call-hour. Based on AWS instance cost divided by an efficiency factor (accounting for idle time), spread across stream capacity. Excludes fixed infrastructure costs." },
+                    { label: "Best For",             value: mode.bestFor,     color: "var(--foreground)", tooltip: undefined },
                   ].map((attr) => (
                     <div key={attr.label} className="flex items-center justify-between text-xs">
-                      <span style={{ color: "var(--muted-foreground)" }}>{attr.label}</span>
+                      <span className="inline-flex items-center gap-1" style={{ color: "var(--muted-foreground)" }}>
+                        {attr.label}
+                        {attr.tooltip && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help" style={{ color: "var(--muted-foreground)" }} aria-label="More info">ⓘ</span>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs leading-relaxed">{attr.tooltip}</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </span>
                       <span className="font-semibold" style={{ color: attr.color }}>{attr.value}</span>
                     </div>
                   ))}
